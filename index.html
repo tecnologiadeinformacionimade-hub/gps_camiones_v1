@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- ANTI-CACHÉ HEADERS PARA FORZAR ACTUALIZACIÓN -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <title>Gestión de Clientes - Grupo Imade</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#22387a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RutasApp">
+    <!-- Manifest codificado referenciando app.jpg -->
+    <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22RutasApp%20Grupo%20Imade%22%2C%22short_name%22%3A%22RutasApp%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%2322387a%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22app.jpg%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fjpeg%22%7D%2C%7B%22src%22%3A%22app.jpg%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fjpeg%22%7D%5D%7D'>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        imade: {
+                            dark: '#22387a', 
+                            light: '#36a8e1', 
+                            bg: '#f8fafc',
+                            card: '#ffffff'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+    
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent; 
+            background-color: #000; 
+        }
+        #map, #map-pilots { height: 100%; width: 100%; z-index: 10; }
+        .leaflet-routing-container { display: none !important; } 
+        
+        .glass-panel { 
+            background: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255,255,255,0.6);
+        }
+        .ios-toast {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .loader { border: 3px solid #e2e8f0; border-top: 3px solid #36a8e1; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .screen-fade { animation: fadeIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .modal-fade { animation: modalFadeIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        
+        .select-custom {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2336a8e1'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1em;
+        }
+
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); }
+        .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+        
+        /* Animación agresiva para SOS */
+        @keyframes sosBlink { 0%, 100% { background-color: #ef4444; transform: scale(1); } 50% { background-color: #991b1b; transform: scale(1.1); } }
+        .sos-danger-blink { animation: sosBlink 0.4s infinite; border: 3px solid white !important; }
+    </style>
+
+    <script>
+        // =====================================================================
+        // SITEMA DE AUTO-ACTUALIZACIÓN PARA PWAs (VERSIÓN 1.0.13 - MODO NUCLEAR)
+        // =====================================================================
+        const APP_VERSION = "1.0.13"; 
+        const currentVersion = localStorage.getItem('imade_app_version');
+        
+        if (currentVersion !== APP_VERSION) {
+            console.log("Nueva versión detectada. Aplicando limpieza extrema...");
+            localStorage.setItem('imade_app_version', APP_VERSION);
+            
+            // 1. Borrar Service Workers viejos
+            if ('serviceWorker' in navigator) {
+                try {
+                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                        for(let registration of registrations) { registration.unregister(); }
+                    }).catch(e => console.warn("SW error:", e));
+                } catch(e) {}
+            }
+            // 2. Borrar todas las cachés
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (let name of names) caches.delete(name);
+                });
+            }
+            // 3. Forzar recarga modificando la URL para evitar caché del navegador
+            setTimeout(() => { 
+                const cleanUrl = window.location.href.split('?')[0];
+                window.location.href = cleanUrl + '?v=' + new Date().getTime(); 
+            }, 600);
+        }
+    </script>
+</head>
+<body class="text-gray-800 antialiased h-[100dvh] w-full overflow-hidden flex justify-center bg-gray-100">
+
+    <!-- AUDIO HACK PARA MANTENER LA APP EN SEGUNDO PLANO (WAKE LOCK SEGUNDO PLANO) -->
+    <!-- Este es un MP3 de 1 segundo de silencio total, en bucle -->
+    <audio id="background-audio" loop playsinline preload="auto">
+        <source src="data:audio/mp3;base64,//OExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq" type="audio/mpeg">
+    </audio>
+
+    <!-- PANTALLA DE INSTALACIÓN OBLIGATORIA (PWA) -->
+    <div id="install-screen" class="fixed inset-0 z-[99999] bg-white flex flex-col items-center justify-center p-6 text-center hidden">
+        <img src="app.jpg" alt="RutasApp" class="w-32 h-32 rounded-3xl shadow-2xl mb-6 object-cover" onerror="this.src='https://cdn-icons-png.flaticon.com/512/854/854878.png'">
+        <h2 class="text-3xl font-black text-imade-dark mb-3">Instala RutasApp</h2>
+        <p class="text-gray-500 mb-8 font-medium px-4 leading-relaxed text-sm">Para continuar y garantizar que el GPS funcione en tiempo real (Versión 1.0.13), instala la aplicación dando clic en el botón de abajo.</p>
+        
+        <button id="btn-install" class="w-full max-w-xs bg-imade-light text-white font-black py-4 rounded-2xl shadow-[0_10px_20px_rgba(54,168,225,0.3)] active:scale-95 transition-transform text-lg flex items-center justify-center">
+            <i class="fa-solid fa-download mr-3"></i> Instalar Ahora
+        </button>
+        
+        <div id="install-instructions" class="hidden mt-6 bg-blue-50 border border-blue-100 p-5 rounded-3xl w-full max-w-xs">
+            <div id="apple-instructions" class="hidden">
+                <p class="text-sm text-imade-dark font-semibold leading-relaxed">
+                    <i class="fa-brands fa-apple text-xl mb-2 block"></i>
+                    En tu iPhone, toca el ícono de Compartir <i class="fa-solid fa-arrow-up-from-bracket mx-1 text-blue-500"></i> abajo y selecciona <br><strong>"Agregar a la pantalla de inicio" <i class="fa-solid fa-square-plus text-blue-500 ml-1"></i></strong>.
+                </p>
+            </div>
+            <div id="android-instructions" class="hidden">
+                <p class="text-sm text-imade-dark font-semibold leading-relaxed">
+                    <i class="fa-brands fa-android text-xl mb-2 block text-green-500"></i>
+                    En tu Android, toca los 3 puntos <i class="fa-solid fa-ellipsis-vertical mx-1"></i> arriba a la derecha y selecciona <br><strong>"Instalar aplicación"</strong> o <strong>"Agregar a la pantalla principal"</strong>.
+                </p>
+            </div>
+        </div>
+
+        <div id="installed-msg" class="hidden flex-col items-center w-full max-w-xs">
+            <div class="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-4 text-4xl shadow-inner"><i class="fa-solid fa-check"></i></div>
+            <p class="text-imade-dark font-black text-xl">¡Instalación exitosa!</p>
+            <p class="text-gray-500 text-sm mt-3 font-medium px-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">Esta pestaña ya no sirve. Ciérrala y abre la aplicación directamente desde la pantalla de inicio de tu celular.</p>
+        </div>
+
+        <button id="btn-bypass" class="mt-8 text-sm font-bold text-gray-400 hover:text-gray-600 underline underline-offset-4 active:scale-95 transition-all">
+            Continuar en navegador web
+        </button>
+    </div>
+
+    <!-- MURO DE PERMISOS (FORZAR NOTIFICACIONES) -->
+    <div id="permissions-modal" class="fixed inset-0 bg-black/80 z-[99995] hidden flex-col items-center justify-center backdrop-blur-md px-6 text-center">
+        <div class="bg-white p-7 rounded-[32px] w-full max-w-sm text-center shadow-2xl modal-fade">
+            <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm">
+                <i class="fa-solid fa-bell text-4xl text-imade-light animate-bounce"></i>
+            </div>
+            <h3 class="text-xl font-black text-gray-900 mb-2 tracking-tight">Permisos Requeridos</h3>
+            <p class="text-gray-500 text-sm mb-6 font-medium">Para recibir alertas de S.O.S. de tus compañeros y mantener el GPS activo, debes permitir que RutasApp te envíe notificaciones.</p>
+            <button onclick="requestAllPermissions()" class="w-full bg-imade-dark text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform flex items-center justify-center">
+                <i class="fa-solid fa-check-double mr-2"></i> Aceptar y Activar
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- NUEVAS PANTALLAS DE S.O.S (OPCIONES Y CONTADOR) -->
+    <!-- ============================================== -->
+    
+    <!-- 1. MODAL OPCIONES DE S.O.S (Mejorado Visualmente) -->
+    <div id="sos-options-modal" class="fixed inset-0 bg-gray-900/95 z-[99990] hidden flex-col items-center justify-center backdrop-blur-md px-4 py-8">
+        <div class="w-full max-w-sm bg-white rounded-[32px] p-6 shadow-2xl flex flex-col items-center justify-center text-center modal-fade relative">
+            <button onclick="closeSosOptions()" class="absolute top-4 right-4 w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 active:scale-90 hover:bg-gray-200 transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <div class="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4"><i class="fa-solid fa-triangle-exclamation text-3xl"></i></div>
+            <h2 class="text-2xl font-black text-gray-900 mb-1">Motivo de Alerta</h2>
+            <p class="text-gray-500 text-sm mb-4">Selecciona la emergencia que presentas:</p>
+            
+            <div class="w-full grid grid-cols-2 gap-4 mt-2">
+                <button onclick="startSosCountdown('Sin Gasolina')" class="bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 font-bold p-4 rounded-2xl flex flex-col items-center justify-center text-center min-h-[100px] gap-2 active:scale-95 transition-all shadow-sm">
+                    <i class="fa-solid fa-gas-pump text-3xl mb-1"></i> <span class="text-xs leading-tight">Sin Gasolina</span>
+                </button>
+                <button onclick="startSosCountdown('Choque')" class="bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-bold p-4 rounded-2xl flex flex-col items-center justify-center text-center min-h-[100px] gap-2 active:scale-95 transition-all shadow-sm">
+                    <i class="fa-solid fa-car-burst text-3xl mb-1"></i> <span class="text-xs leading-tight">Choque</span>
+                </button>
+                <button onclick="startSosCountdown('Robo o Asalto')" class="bg-slate-800 hover:bg-slate-900 border border-slate-700 text-white font-bold p-4 rounded-2xl flex flex-col items-center justify-center text-center min-h-[100px] gap-2 active:scale-95 transition-all shadow-sm">
+                    <i class="fa-solid fa-mask text-3xl mb-1"></i> <span class="text-xs leading-tight">Robo / Asalto</span>
+                </button>
+                <button onclick="startSosCountdown('Falla Mecánica')" class="bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 text-yellow-700 font-bold p-4 rounded-2xl flex flex-col items-center justify-center text-center min-h-[100px] gap-2 active:scale-95 transition-all shadow-sm">
+                    <i class="fa-solid fa-screwdriver-wrench text-3xl mb-1"></i> <span class="text-xs leading-tight">Mecánica</span>
+                </button>
+                <button onclick="startSosCountdown('Emergencia Médica')" class="bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 font-bold p-4 rounded-2xl flex flex-col items-center justify-center text-center min-h-[100px] gap-2 active:scale-95 transition-all shadow-sm">
+                    <i class="fa-solid fa-truck-medical text-3xl mb-1"></i> <span class="text-xs leading-tight">Médica</span>
+                </button>
+                <button onclick="startSosCountdown('Otra Emergencia')" class="bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-700 font-bold p-4 rounded-2xl flex flex-col items-center justify-center text-center min-h-[100px] gap-2 active:scale-95 transition-all shadow-sm">
+                    <i class="fa-solid fa-circle-exclamation text-3xl mb-1"></i> <span class="text-xs leading-tight">Otro Motivo</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MODAL CONTADOR DE S.O.S -->
+    <div id="sos-countdown-modal" class="fixed inset-0 bg-red-600/95 z-[99991] hidden flex-col items-center justify-center backdrop-blur-md px-6 text-center">
+        <h2 class="text-3xl font-black text-white mb-2 tracking-tight drop-shadow-md">¿Estás seguro?</h2>
+        <p class="text-red-100 text-lg font-medium mb-8">Enviando alerta por: <strong id="sos-motivo-texto" class="text-white bg-red-800 px-3 py-1 rounded-lg shadow-sm">Choque</strong></p>
+        
+        <!-- Círculo contador -->
+        <div class="relative w-48 h-48 mb-10 flex items-center justify-center">
+            <svg class="absolute inset-0 w-full h-full transform -rotate-90 drop-shadow-lg" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="8"></circle>
+                <circle id="countdown-circle" cx="50" cy="50" r="45" fill="none" stroke="white" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="0" style="transition: stroke-dashoffset 1s linear;"></circle>
+            </svg>
+            <div class="text-7xl font-black text-white drop-shadow-lg font-mono z-10" id="sos-pre-timer">5</div>
+        </div>
+        
+        <button onclick="cancelSosCountdown()" class="w-full max-w-xs bg-white text-red-600 font-black py-4 rounded-full shadow-2xl active:scale-95 transition-transform text-xl border-4 border-red-200 flex items-center justify-center">
+            <i class="fa-solid fa-ban mr-2"></i> Cancelar Alerta
+        </button>
+    </div>
+
+    <!-- 3. PANTALLA DE S.O.S ACTIVO (Alerta disparada) -->
+    <div id="sos-active-modal" class="fixed inset-0 bg-red-900/95 z-[99990] hidden flex-col items-center justify-center backdrop-blur-md px-6 text-center">
+        <div class="w-32 h-32 bg-red-500 rounded-full flex items-center justify-center mb-6 animate-pulse shadow-[0_0_50px_rgba(239,68,68,0.6)]">
+            <i class="fa-solid fa-satellite-dish text-6xl text-white"></i>
+        </div>
+        <h2 class="text-3xl font-black text-white mb-2 tracking-tight">ALERTA ENVIADA</h2>
+        <p class="text-red-200 text-sm font-medium mb-8">La flota y administración han recibido un correo y notificación con tu ubicación y motivo.</p>
+        <div class="text-5xl font-black text-white mb-10 drop-shadow-lg font-mono" id="sos-active-timer">00:00</div>
+        <button onclick="deactivateSOS()" class="w-full max-w-xs bg-white text-red-600 font-black py-4 rounded-full shadow-2xl active:scale-95 transition-transform text-lg border border-red-100">
+            Resolver / Apagar Alerta
+        </button>
+    </div>
+
+    <!-- ANUNCIO S.O.S RECIBIDO (MEDIA PANTALLA) PARA OTROS PILOTOS -->
+    <div id="sos-receive-modal" class="fixed inset-x-0 top-0 h-[50dvh] bg-red-600/95 backdrop-blur-xl z-[99996] hidden flex flex-col items-center justify-center p-6 text-center shadow-[0_20px_50px_rgba(220,38,38,0.5)] transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] -translate-y-full rounded-b-[40px] border-b-4 border-red-400">
+        <button onclick="dismissSosBanner()" class="absolute top-8 right-6 w-12 h-12 bg-black/20 rounded-full text-white flex items-center justify-center hover:bg-black/40 transition-colors active:scale-90">
+            <i class="fa-solid fa-xmark text-2xl"></i>
+        </button>
+        <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 animate-pulse text-red-600 shadow-xl relative">
+            <div class="absolute inset-0 border-4 border-white rounded-full animate-ping opacity-50"></div>
+            <i class="fa-solid fa-triangle-exclamation text-5xl"></i>
+        </div>
+        <h2 class="text-3xl font-black text-white mb-3 tracking-tight drop-shadow-md">¡ALERTA EN FLOTA!</h2>
+        <p id="sos-receive-text" class="text-red-100 text-base font-medium leading-relaxed max-w-xs mx-auto drop-shadow-sm">Un compañero necesita ayuda.</p>
+        <p class="text-white/60 text-xs mt-6"><i class="fa-solid fa-volume-high mr-1"></i> La alarma y vibración continúan</p>
+    </div>
+
+    <!-- Firebase Real-time Integration -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        window.latestPilots = [];
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'rutas-imade-pro';
+        const configStr = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
+        
+        let firebaseConfig = {};
+        try { firebaseConfig = JSON.parse(configStr); } catch(e) {}
+
+        // =====================================================================
+        // CONFIGURACIÓN DE FIREBASE
+        // =====================================================================
+        firebaseConfig = {
+            apiKey: "AIzaSyDCum0Z8j33F2g8aVZxaPIzyWaN1tunSTk",
+            authDomain: "rutasapp-imade.firebaseapp.com",
+            projectId: "rutasapp-imade",
+            storageBucket: "rutasapp-imade.firebasestorage.app",
+            messagingSenderId: "320301869648",
+            appId: "1:320301869648:web:046645830d4b0d036d7f55"
+        };
+
+        if (Object.keys(firebaseConfig).length > 0) {
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+
+            window.firebaseDb = db;
+            window.firebaseAppId = appId;
+
+            const initAuth = async () => { 
+                try {
+                    await signInAnonymously(auth); 
+                } catch(error) {
+                    console.error("Error Auth Firebase:", error);
+                    setTimeout(() => {
+                        showToast("⚠️ Falta un paso en Firebase", "Ve a tu proyecto > Authentication > y Activa el método 'Anónimo'.", "fa-triangle-exclamation", "text-red-500", "bg-red-50 border-red-200");
+                    }, 2000);
+                }
+            };
+            initAuth();
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    window.currentUser = user;
+                    window.startPilotsListener();
+                    if (window.userLat && window.userLng) {
+                        window.updatePilotLocation(window.userLat, window.userLng, window.userSpeed || 0, 'activo', '');
+                    }
+                }
+            });
+
+            // ENVÍO DE UBICACIÓN
+            window.updatePilotLocation = async (lat, lng, speed, status, motivo) => {
+                if(!window.currentUser || !window.firebaseDb) return;
+                try {
+                    const pilotRef = doc(window.firebaseDb, 'artifacts', window.firebaseAppId, 'public', 'data', 'pilotos', window.currentUser.uid);
+                    await setDoc(pilotRef, {
+                        lat, lng, status, speed, motivo,
+                        name: localStorage.getItem('imade_pilot_name') || "Piloto Anónimo",
+                        timestamp: Date.now()
+                    });
+                } catch(error) {
+                    console.error("Error al escribir en la base de datos:", error);
+                }
+            };
+
+            // Función para ocultar el anuncio de SOS manualmente
+            window.dismissSosBanner = function() {
+                const sosBanner = document.getElementById('sos-receive-modal');
+                sosBanner.classList.remove('translate-y-0');
+                sosBanner.classList.add('-translate-y-full');
+                setTimeout(() => { sosBanner.classList.add('hidden'); }, 500);
+            };
+
+            window.startPilotsListener = () => {
+                const pilotsCol = collection(window.firebaseDb, 'artifacts', window.firebaseAppId, 'public', 'data', 'pilotos');
+                
+                onSnapshot(pilotsCol, (snapshot) => {
+                    const pilots = [];
+                    const now = Date.now();
+                    let anyOtherSOS = false; 
+                    let mySOS = false;
+                    let activeSosPilots = [];
+
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        if (now - data.timestamp < 3600000) { 
+                           pilots.push({...data, id: doc.id});
+                           if(data.status === 'SOS') {
+                               if (doc.id === window.currentUser.uid) {
+                                   mySOS = true;
+                               } else {
+                                   anyOtherSOS = true;
+                                   activeSosPilots.push({...data, id: doc.id});
+                               }
+                           }
+                        }
+                    });
+
+                    window.latestPilots = pilots;
+
+                    if (window.renderPilotsMap && !document.getElementById('screen-pilots').classList.contains('hidden')) {
+                        window.renderPilotsMap(pilots);
+                    }
+                    
+                    // Reproducir audio tanto si es SOS mío como de otro!
+                    if (window.manageSOSAudio) window.manageSOSAudio(mySOS || anyOtherSOS); 
+
+                    // Ocultar banner si ya no hay SOS externo
+                    if (!anyOtherSOS && window.wasSosActive) {
+                        window.dismissSosBanner();
+                    }
+
+                    // LÓGICA AGRESIVA DE NOTIFICACIONES Y ANUNCIO S.O.S (Solo para SOS ajenos)
+                    if (anyOtherSOS && !window.wasSosActive && activeSosPilots.length > 0) {
+                        let sosPilot = activeSosPilots[0];
+                        let mot = sosPilot.motivo ? `(${sosPilot.motivo})` : '';
+                        
+                        document.getElementById('sos-receive-text').innerHTML = `El piloto <strong>${sosPilot.name}</strong> reporta <strong>emergencia ${mot}</strong> a una velocidad de ${sosPilot.speed || 0} km/h.`;
+                        const sosBanner = document.getElementById('sos-receive-modal');
+                        sosBanner.classList.remove('hidden');
+                        requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                                sosBanner.classList.remove('-translate-y-full');
+                                sosBanner.classList.add('translate-y-0');
+                            });
+                        });
+
+                        // Intentar despertar la pantalla
+                        if (window.requestWakeLock) window.requestWakeLock();
+
+                        // Notificación OS Push
+                        const notifTitle = "🚨 ALERTA S.O.S " + mot;
+                        const notifOptions = {
+                            body: `URGENTE: ${sosPilot.name} solicita apoyo.`,
+                            icon: "app.jpg",
+                            badge: "app.jpg",
+                            vibrate: [500, 250, 500, 250, 1000, 250, 500, 250, 500],
+                            requireInteraction: true,
+                            tag: 'sos-alert',
+                            renotify: true
+                        };
+
+                        if ('Notification' in window && Notification.permission === 'granted') {
+                            try {
+                                if ('serviceWorker' in navigator) {
+                                    navigator.serviceWorker.ready.then(function(registration) {
+                                        registration.showNotification(notifTitle, notifOptions).catch(e => {
+                                            new Notification(notifTitle, notifOptions);
+                                        });
+                                    }).catch(e => {
+                                        new Notification(notifTitle, notifOptions);
+                                    });
+                                } else {
+                                    new Notification(notifTitle, notifOptions);
+                                }
+                            } catch(e) {}
+                        }
+                    }
+                    window.wasSosActive = anyOtherSOS;
+
+                }, (error) => {
+                    console.error("Error en radar:", error);
+                });
+            }
+
+            window.addEventListener("beforeunload", () => {
+                if(window.updatePilotLocation && window.userLat && window.userLng && document.getElementById('sos-active-modal').classList.contains('hidden')) {
+                    window.updatePilotLocation(window.userLat, window.userLng, 0, 'inactivo', '');
+                }
+            });
+            
+            document.addEventListener("visibilitychange", () => {
+                if (document.visibilityState === 'visible') {
+                    if(window.requestWakeLock) window.requestWakeLock();
+                }
+            });
+
+        } else {
+            window.updatePilotLocation = async () => {};
+            window.startPilotsListener = () => {};
+        }
+    </script>
+
+    <div id="app" class="w-full max-w-md bg-imade-bg h-full relative shadow-2xl overflow-hidden flex flex-col pt-safe">
+
+        <!-- HEADER -->
+        <header class="bg-white/90 backdrop-blur-md px-5 py-4 flex justify-between items-center z-20 shrink-0 border-b border-gray-100/50 relative">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-imade-dark to-blue-800 rounded-xl flex items-center justify-center text-white shadow-sm">
+                    <i class="fa-solid fa-map-location-dot text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-extrabold text-imade-dark leading-tight tracking-tight">RutasApp</h1>
+                    <p class="text-[11px] text-imade-light font-bold uppercase tracking-wider">Grupo Imade</p>
+                </div>
+            </div>
+            <button id="btn-sync" onclick="syncData()" class="w-10 h-10 rounded-full bg-gray-50 text-imade-dark hover:bg-imade-light hover:text-white flex items-center justify-center transition-all shadow-sm active:scale-90" title="Sincronizar Datos">
+                <i class="fa-solid fa-rotate"></i>
+            </button>
+        </header>
+
+        <!-- CONTENEDOR DE PANTALLAS -->
+        <div class="flex-1 overflow-hidden relative">
+            
+            <!-- PANTALLA 1: INICIO -->
+            <div id="screen-home" class="screen w-full h-full flex flex-col px-5 py-3 overflow-hidden">
+                
+                <div class="flex flex-col items-center justify-center mt-1 mb-3">
+                    <!-- ACTUALIZADO A LOGO.PNG PARA INTERIOR DE LA APP -->
+                    <img src="logo.png" alt="Grupo Imade" class="h-16 w-16 rounded-2xl object-cover mb-3 shadow-md border border-gray-200" onerror="this.src='https://cdn-icons-png.flaticon.com/512/854/854878.png'">
+                    <h2 class="text-2xl font-black text-imade-dark text-center tracking-tight">¡Bienvenido!</h2>
+                </div>
+                
+                <!-- Tarjetas de Acción Rápida -->
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div onclick="switchTab('search')" class="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-transform hover:shadow-md">
+                        <div class="w-10 h-10 bg-blue-50 text-imade-light rounded-2xl flex items-center justify-center mb-2">
+                            <i class="fa-solid fa-users text-lg"></i>
+                        </div>
+                        <h3 class="font-bold text-gray-800 text-sm">Buscar<br><span class="text-gray-500 font-medium text-[11px]">Cliente</span></h3>
+                    </div>
+                    
+                    <div onclick="switchTab('register')" class="bg-gradient-to-br from-imade-dark to-blue-900 p-4 rounded-3xl shadow-md flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-transform relative overflow-hidden">
+                        <div class="absolute -right-4 -top-4 w-16 h-16 bg-white opacity-5 rounded-full blur-xl"></div>
+                        <div class="w-10 h-10 bg-white/10 text-white rounded-2xl flex items-center justify-center mb-2 backdrop-blur-sm border border-white/10">
+                            <i class="fa-solid fa-location-crosshairs text-lg"></i>
+                        </div>
+                        <h3 class="font-bold text-white text-sm">Nuevo<br><span class="text-blue-200 font-medium text-[11px]">Registro</span></h3>
+                    </div>
+                </div>
+
+                <!-- Estados Divididos: GPS (Velocidad) y Piloto -->
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-white rounded-3xl p-3 shadow-sm border border-gray-100 flex flex-col justify-center items-center text-center gap-1.5 transition-colors">
+                        <div id="home-gps-icon" class="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 transition-colors">
+                            <i class="fa-solid fa-satellite-dish text-sm animate-pulse"></i>
+                        </div>
+                        <div>
+                            <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Velocidad</p>
+                            <p id="home-gps-status" class="text-[11px] font-bold text-gray-600 leading-tight">Buscando...</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-3xl p-3 shadow-sm border border-gray-100 flex flex-col justify-center items-center text-center gap-1.5 transition-colors">
+                        <div id="home-pilot-icon" class="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 transition-colors">
+                            <i class="fa-solid fa-user-astronaut text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Tu Estado</p>
+                            <p id="home-pilot-status" class="text-[11px] font-bold text-gray-600 leading-tight">Inactivo</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTÓN S.O.S QUE ABRE OPCIONES -->
+                <button onclick="openSosOptions()" class="w-full bg-red-500 text-white font-black py-3.5 rounded-3xl shadow-xl shadow-red-500/30 hover:bg-red-600 transition-all active:scale-95 flex justify-center items-center border border-red-400 overflow-hidden relative group">
+                    <div class="absolute inset-0 bg-white/20 w-full h-full transform -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                    <i class="fa-solid fa-triangle-exclamation mr-2 text-xl animate-pulse"></i> EMITIR ALERTA S.O.S
+                </button>
+
+                <!-- Footer IT -->
+                <div class="mt-auto pt-4 text-center pb-2">
+                    <div class="inline-flex items-center justify-center space-x-2 text-[10px] text-gray-400 font-medium bg-white border border-gray-100/50 px-3 py-1.5 rounded-full shadow-sm mb-1.5">
+                        <i class="fa-solid fa-laptop-code text-imade-light"></i>
+                        <span>Creado por <strong>Depto. de IT</strong></span>
+                    </div>
+                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest" id="app-version-text">Versión 1.0.13</p>
+                </div>
+            </div>
+
+            <!-- PANTALLA 2: BUSCAR -->
+            <div id="screen-search" class="screen hidden w-full h-full flex flex-col bg-imade-bg">
+                <div class="p-5 bg-white/95 backdrop-blur-md shadow-sm shrink-0 z-10 relative border-b border-gray-100">
+                    <h2 class="text-2xl font-black text-imade-dark mb-4 tracking-tight">Directorio</h2>
+                    <div class="relative">
+                        <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg"></i>
+                        <input type="text" id="search-input" onkeyup="filterClients()" placeholder="Buscar nombre o código..." class="w-full pl-11 pr-10 py-3.5 bg-gray-100 rounded-2xl border-transparent focus:bg-white focus:border-imade-light focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm font-semibold shadow-inner">
+                        <button id="clear-search-btn" onclick="clearSearch()" class="absolute right-3 top-1/2 transform -translate-y-1/2 w-8 h-8 text-gray-400 hover:text-gray-600 flex items-center justify-center hidden opacity-0 transition-opacity">
+                            <i class="fa-solid fa-circle-xmark text-lg"></i>
+                        </button>
+                    </div>
+                    <div class="flex justify-between items-center mt-4 px-1">
+                        <p class="text-xs text-gray-500 font-semibold" id="clients-count">Cargando...</p>
+                        <div class="relative">
+                            <select id="sort-select" onchange="changeSort(this.value)" class="select-custom text-[11px] font-bold text-imade-dark bg-gray-50 border border-gray-200 rounded-xl pl-3 pr-7 py-2 outline-none cursor-pointer">
+                                <option value="distance">📍 Cercanos</option>
+                                <option value="name">🔤 A - Z</option>
+                                <option value="code">#️⃣ Código</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div id="client-list" class="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar pb-6"></div>
+            </div>
+
+            <!-- PANTALLA 3: MAPA DE RUTA (CON FICHA DESPLEGABLE) -->
+            <div id="screen-map" class="screen hidden absolute inset-0 flex flex-col z-[100] bg-gray-200">
+                <div class="absolute top-6 left-4 right-4 z-[400] flex justify-between items-center pointer-events-none">
+                    <button onclick="closeMap()" class="bg-white/90 backdrop-blur-xl w-12 h-12 rounded-full shadow-lg text-imade-dark hover:bg-gray-50 flex items-center justify-center transition-transform active:scale-90 pointer-events-auto border border-white/50">
+                        <i class="fa-solid fa-arrow-left text-lg"></i>
+                    </button>
+                    <button onclick="centerMap()" class="bg-white/90 backdrop-blur-xl w-12 h-12 rounded-full shadow-lg text-imade-light hover:bg-gray-50 flex items-center justify-center transition-transform active:scale-90 pointer-events-auto border border-white/50">
+                        <i class="fa-solid fa-location-crosshairs text-lg"></i>
+                    </button>
+                </div>
+                
+                <div class="flex-1 w-full relative">
+                    <!-- Mapa en el fondo -->
+                    <div id="map" class="absolute inset-0"></div>
+                    <div id="route-loader" class="absolute inset-0 bg-white/50 backdrop-blur-md z-[400] flex flex-col items-center justify-center hidden">
+                        <div class="w-16 h-16 bg-white rounded-3xl shadow-2xl flex items-center justify-center mb-4 border border-blue-50"><div class="loader"></div></div>
+                        <p class="font-bold text-imade-dark bg-white/90 backdrop-blur-md px-5 py-2 rounded-full text-sm shadow-sm">Calculando ruta óptima...</p>
+                    </div>
+                </div>
+                
+                <!-- BOTTOM SHEET DESPLEGABLE -->
+                <div id="bottom-sheet" class="glass-panel p-5 rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.15)] absolute bottom-0 left-0 w-full z-[500] transition-transform duration-300 ease-out translate-y-[calc(100%-160px)] flex flex-col h-[65dvh]">
+                    
+                    <!-- Drag Handle Area -->
+                    <div id="drag-handle" class="w-full h-10 absolute top-0 left-0 flex justify-center items-start pt-3 cursor-grab z-10" onclick="window.toggleSheet()">
+                        <div class="w-12 h-1.5 bg-gray-400/50 rounded-full"></div>
+                    </div>
+                    
+                    <!-- Cabecera siempre visible -->
+                    <div class="mt-5 mb-3 px-1 flex-shrink-0" onclick="window.toggleSheet()">
+                        <div class="flex justify-between items-start mb-1">
+                            <h3 id="map-client-name" class="text-xl font-black text-gray-900 leading-tight pr-4 tracking-tight">Nombre Cliente</h3>
+                            <span id="map-client-distance" class="bg-blue-50 text-imade-light text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap border border-blue-100 shadow-sm hidden">-- km</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Botones siempre visibles -->
+                    <div class="grid grid-cols-2 gap-3 mb-4 px-1 flex-shrink-0">
+                        <button onclick="openWaze()" class="bg-[#33ccff] text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-[#33ccff]/40 hover:bg-[#00bfff] flex justify-center items-center transition-transform active:scale-95"><i class="fa-brands fa-waze text-xl mr-2"></i> Waze</button>
+                        <button onclick="openGoogleMaps()" class="bg-gray-100 text-gray-800 font-bold py-3 px-4 rounded-xl shadow-sm hover:bg-gray-200 flex justify-center items-center transition-transform active:scale-95 border border-gray-200"><i class="fa-solid fa-map-location-dot text-lg mr-2 text-[#34a853]"></i> Maps</button>
+                    </div>
+
+                    <!-- Detalles (Visibles al desplegar) -->
+                    <div id="sheet-details" class="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border border-gray-200/60 flex-1 overflow-y-auto opacity-0 transition-opacity duration-300 no-scrollbar">
+                        <div class="space-y-3 w-full">
+                            <div class="flex items-center">
+                                <span class="font-bold text-gray-400 text-[10px] uppercase tracking-wider w-20 shrink-0">Código:</span>
+                                <span class="font-black text-imade-dark bg-blue-50 px-2 py-0.5 rounded shadow-sm border border-blue-100 text-[12px]" id="map-client-code"># --</span>
+                            </div>
+                            <div class="flex items-start">
+                                <span class="font-bold text-gray-400 text-[10px] uppercase tracking-wider w-20 shrink-0 mt-0.5">Dirección:</span>
+                                <span class="text-gray-700 text-sm font-medium leading-tight" id="map-client-address-text">--</span>
+                            </div>
+                            <div class="flex items-start">
+                                <span class="font-bold text-gray-400 text-[10px] uppercase tracking-wider w-20 shrink-0 mt-0.5">Municipio:</span>
+                                <span class="text-gray-700 text-sm font-medium leading-tight" id="map-client-muni">--</span>
+                            </div>
+                            <div class="flex items-start">
+                                <span class="font-bold text-gray-400 text-[10px] uppercase tracking-wider w-20 shrink-0 mt-0.5">Depto:</span>
+                                <span class="text-gray-700 text-sm font-medium leading-tight" id="map-client-depto">--</span>
+                            </div>
+                            
+                            <div class="flex items-center pt-3 border-t border-gray-200 mt-2 hidden" id="map-client-phone-container">
+                                <span class="font-bold text-gray-400 text-[10px] uppercase tracking-wider w-20 shrink-0">Teléfono:</span>
+                                <i class="fa-solid fa-phone mr-1.5 text-green-500 text-xs"></i>
+                                <a href="#" id="map-client-phone-link" class="text-blue-600 underline underline-offset-2 font-bold tracking-wide text-sm">--</a>
+                            </div>
+                            
+                            <div class="flex items-center pt-2 mt-1">
+                                <span class="font-bold text-gray-400 text-[10px] uppercase tracking-wider w-20 shrink-0">GPS:</span>
+                                <i class="fa-solid fa-map-pin mr-1.5 text-gray-400 text-xs"></i>
+                                <span class="text-gray-500 text-[10px] font-medium opacity-80" id="map-client-coords">Lat: 0, Lng: 0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANTALLA 4: REGISTRAR CLIENTE -->
+            <div id="screen-register" class="screen hidden w-full h-full flex flex-col bg-imade-bg">
+                <div class="p-5 bg-white shadow-sm shrink-0 border-b border-gray-100">
+                    <h2 class="text-2xl font-black text-imade-dark tracking-tight">Registrar</h2>
+                    <p class="text-xs text-gray-500 mt-1 font-medium">Ubicación y hora se guardan solos</p>
+                </div>
+                <div class="flex-1 overflow-y-auto p-5 no-scrollbar pb-6">
+                    <form id="register-form" onsubmit="saveClient(event)" class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+                        <div id="location-status" class="p-4 bg-gray-50 rounded-2xl flex items-center border border-gray-200 transition-colors">
+                            <div class="mr-3 text-gray-400"><i class="fa-solid fa-location-crosshairs animate-pulse text-xl"></i></div>
+                            <div>
+                                <h4 class="text-sm font-bold text-gray-700">Esperando señal GPS</h4>
+                                <p class="text-xs text-gray-500 font-medium">Buscando...</p>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div><label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Piloto (Automático)</label><input type="text" id="reg-pilot" disabled class="w-full px-4 py-4 bg-gray-100 rounded-2xl border border-transparent text-sm font-bold text-gray-500 shadow-inner"></div>
+                            <div><label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Nombre de Cliente</label><input type="text" id="reg-name" required placeholder="Ej. Distribuidora Central" class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800"></div>
+                            <div><label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Código de Cliente</label><input type="text" id="reg-code" required placeholder="Ej. 1234" class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800"></div>
+                            <div><label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Teléfono</label><input type="tel" id="reg-phone" required placeholder="Ej. 5555-5555" class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800"></div>
+                            <div><label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Departamento</label><input type="text" id="reg-depto" required placeholder="Ej. Guatemala" class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800"></div>
+                            <div><label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Municipio</label><input type="text" id="reg-muni" required placeholder="Ej. Mixco" class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800"></div>
+                            <div><label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Dirección Exacta</label><textarea id="reg-address" required rows="2" placeholder="Ej. 4ta Calle 2-33 Zona 1..." class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm resize-none font-bold text-gray-800"></textarea></div>
+                            <div><label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">País</label><input type="text" id="reg-pais" value="Guatemala" required class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800 shadow-inner hidden"></div>
+                        </div>
+                        <div class="pt-2"><button type="submit" id="btn-save" class="w-full bg-imade-dark text-white font-black py-4 rounded-2xl shadow-xl shadow-imade-dark/30 hover:bg-blue-900 transition-all active:scale-95 disabled:opacity-50 flex justify-center items-center"><i class="fa-solid fa-cloud-arrow-up mr-2 text-lg"></i> Guardar Cliente</button></div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- PANTALLA 5: MAPA DE PILOTOS EN VIVO -->
+            <div id="screen-pilots" class="screen hidden absolute inset-0 flex flex-col z-[90] bg-gray-200">
+                <div class="p-5 bg-white/95 backdrop-blur-md shadow-sm shrink-0 z-10 relative border-b border-gray-100 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-black text-imade-dark tracking-tight">Flota en Vivo</h2>
+                        <p class="text-xs text-gray-500 font-medium">Monitoreo satelital simultáneo</p>
+                    </div>
+                    <div class="w-10 h-10 bg-blue-50 text-imade-light rounded-full flex items-center justify-center shadow-inner relative">
+                        <div class="absolute inset-0 border-2 border-imade-light rounded-full animate-ping opacity-50"></div>
+                        <i class="fa-solid fa-satellite text-lg"></i>
+                    </div>
+                </div>
+                <div class="flex-1 w-full relative">
+                    <div id="map-pilots" class="absolute inset-0 bg-gray-100"></div>
+                    <button onclick="window.centerPilotsMap()" class="absolute bottom-6 right-4 z-[400] bg-white/90 backdrop-blur-xl w-14 h-14 rounded-full shadow-lg text-imade-dark hover:bg-gray-50 flex items-center justify-center transition-transform active:scale-90 border border-white/50">
+                        <i class="fa-solid fa-location-crosshairs text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+        </div> 
+
+        <!-- BOTTOM NAVIGATION BAR -->
+        <nav id="bottom-nav" class="bg-white/90 backdrop-blur-xl border-t border-gray-100 flex justify-around items-center pb-safe z-50 shrink-0 relative px-2">
+            <button onclick="switchTab('home')" class="nav-btn flex-1 py-3 flex flex-col items-center gap-1 text-imade-dark relative transition-colors">
+                <i class="fa-solid fa-house text-xl mb-0.5"></i>
+                <span class="text-[10px] font-extrabold uppercase">Inicio</span>
+            </button>
+            <button onclick="switchTab('search')" class="nav-btn flex-1 py-3 flex flex-col items-center gap-1 text-gray-400 hover:text-imade-dark transition-colors relative">
+                <i class="fa-solid fa-magnifying-glass text-xl mb-0.5"></i>
+                <span class="text-[10px] font-extrabold uppercase">Buscar</span>
+            </button>
+            <button onclick="switchTab('register')" class="nav-btn flex-1 py-3 flex flex-col items-center gap-1 text-gray-400 hover:text-imade-dark transition-colors relative">
+                <i class="fa-solid fa-location-dot text-xl mb-0.5"></i>
+                <span class="text-[10px] font-extrabold uppercase">Registrar</span>
+            </button>
+            <button onclick="switchTab('pilots')" class="nav-btn flex-1 py-3 flex flex-col items-center gap-1 text-gray-400 hover:text-imade-dark transition-colors relative">
+                <i class="fa-solid fa-truck-fast text-xl mb-0.5 relative">
+                    <span class="absolute -top-1 -right-2 flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-imade-light opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-imade-light border border-white"></span>
+                    </span>
+                </i>
+                <span class="text-[10px] font-extrabold uppercase text-imade-light">Flota</span>
+            </button>
+        </nav>
+
+        <!-- Identidad del Piloto Modal -->
+        <div id="name-modal" class="fixed inset-0 bg-black/60 z-[3000] hidden flex items-center justify-center backdrop-blur-md px-4 transition-opacity">
+            <div class="bg-white p-7 rounded-[32px] w-full max-w-sm text-center shadow-2xl modal-fade">
+                <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm">
+                    <i class="fa-solid fa-id-badge text-4xl text-imade-light"></i>
+                </div>
+                <h3 class="text-xl font-black text-gray-900 mb-1 tracking-tight">Identificación</h3>
+                <p class="text-gray-500 text-sm mb-5 font-medium">Ingresa tu nombre para aparecer en el radar de la flota en tiempo real.</p>
+                <input type="text" id="pilot-name-input" placeholder="Ej. Juan Pérez" class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-gray-200 focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800 text-center mb-4">
+                <button onclick="savePilotName()" class="w-full bg-imade-dark text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform">
+                    Comenzar Turno
+                </button>
+            </div>
+        </div>
+
+        <!-- iOS Style Toast -->
+        <div id="toast" class="absolute top-4 left-4 right-4 sm:left-1/2 sm:w-96 sm:-translate-x-1/2 ios-toast rounded-[24px] p-4 flex items-center gap-3 transition-all duration-400 opacity-0 -translate-y-[150%] pointer-events-none z-[9999]">
+            <div id="toast-icon" class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center shrink-0 border border-gray-200">
+                <i class="fa-solid fa-bell text-imade-light text-lg"></i>
+            </div>
+            <div class="flex-1">
+                <h4 id="toast-title" class="text-sm font-extrabold text-gray-900 leading-tight">RutasApp</h4>
+                <p id="toast-msg" class="text-[13px] text-gray-600 mt-0.5 font-medium leading-snug">Mensaje</p>
+            </div>
+        </div>
+
+        <!-- Pop-up GPS Alert -->
+        <div id="gps-modal" class="fixed inset-0 bg-black/60 z-[2000] hidden flex items-center justify-center backdrop-blur-sm px-4 transition-opacity">
+            <div class="bg-white p-7 rounded-[32px] w-full max-w-sm text-center shadow-2xl modal-fade">
+                <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5 border-4 border-white shadow-sm relative">
+                    <i class="fa-solid fa-location-crosshairs text-3xl text-red-500"></i>
+                    <div class="absolute -right-1 -bottom-1 bg-white rounded-full p-1"><div class="bg-red-500 rounded-full w-5 h-5 flex items-center justify-center"><i class="fa-solid fa-xmark text-white text-xs font-bold"></i></div></div>
+                </div>
+                <h3 class="text-xl font-black text-gray-900 mb-2 tracking-tight">Ubicación Apagada</h3>
+                <p class="text-gray-500 text-sm mb-6 leading-relaxed font-medium">Para que la app funcione, necesitas <strong>encender tu GPS</strong> y otorgar permisos.</p>
+                <button onclick="closeGpsModal()" class="w-full bg-gray-900 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-transform">Entendido</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
+    <script>
+        // CONFIGURA AQUÍ TU URL DE GOOGLE APPS SCRIPT
+        const GOOGLE_APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyyDzs_dc8x1FcNqCG37MsqvqE17br6Xzqa64O6j81-qPpl4gHcnST9X8oo3I7t1jjL/exec";
+        
+        // =========================================================================
+        // PWA SETUP Y BYPASS DE INSTALACIÓN
+        // =========================================================================
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        let deferredPrompt;
+        const btnInstall = document.getElementById('btn-install');
+        const installInstructions = document.getElementById('install-instructions');
+        const appleInstructions = document.getElementById('apple-instructions');
+        const androidInstructions = document.getElementById('android-instructions');
+        const btnBypass = document.getElementById('btn-bypass');
+
+        if (!isStandalone) {
+            document.getElementById('app').classList.add('hidden');
+            document.getElementById('install-screen').classList.remove('hidden');
+            
+            // FORZAR SIEMPRE LA VISIBILIDAD DEL BOTÓN DE INSTALAR
+            btnInstall.classList.remove('hidden');
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+            });
+
+            btnInstall.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        btnInstall.classList.add('hidden');
+                        installInstructions.classList.add('hidden');
+                        document.getElementById('installed-msg').classList.remove('hidden');
+                        btnBypass.classList.add('hidden');
+                    }
+                    deferredPrompt = null;
+                } else {
+                    // Si no se soporta prompt nativo, mostramos instrucciones visuales
+                    btnInstall.classList.add('hidden');
+                    installInstructions.classList.remove('hidden');
+                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                    if (isIOS) {
+                        appleInstructions.classList.remove('hidden');
+                        androidInstructions.classList.add('hidden');
+                    } else {
+                        appleInstructions.classList.add('hidden');
+                        androidInstructions.classList.remove('hidden');
+                    }
+                }
+            });
+
+            btnBypass.addEventListener('click', () => {
+                document.getElementById('install-screen').classList.add('hidden');
+                document.getElementById('app').classList.remove('hidden');
+                if(map) map.invalidateSize();
+                if(pilotsMap) pilotsMap.invalidateSize();
+                checkPermissions(); 
+            });
+
+            window.addEventListener('appinstalled', () => {
+                btnInstall.classList.add('hidden');
+                installInstructions.classList.add('hidden');
+                btnBypass.classList.add('hidden');
+                document.getElementById('installed-msg').classList.remove('hidden');
+            });
+        }
+
+        // SW FIX: Service Worker robusto con la inyección por BLOB mejorada
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                try {
+                    const swCode = `
+                        self.addEventListener('install', (e) => { self.skipWaiting(); });
+                        self.addEventListener('activate', (e) => { 
+                            e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))));
+                            self.clients.claim(); 
+                        });
+                        self.addEventListener('fetch', (e) => {
+                            if (!e.request.url.startsWith('http')) return;
+                            e.respondWith(fetch(e.request, {cache: "no-store"}).catch(() => caches.match(e.request)));
+                        });
+                    `;
+                    const blob = new Blob([swCode], {type: 'application/javascript'});
+                    const url = URL.createObjectURL(blob);
+                    navigator.serviceWorker.register(url).then(reg => {
+                        console.log("Service Worker Activo y Listo para Notificaciones");
+                    }).catch(err => console.log('SW error', err));
+                } catch(e) { console.warn("SW Setup Error:", e); }
+            });
+        }
+
+        // =========================================================================
+        // VARIABLES GLOBALES
+        // =========================================================================
+        let clients = [];
+        let map = null, pilotsMap = null;
+        let routingControl = null;
+        let pilotMarkers = {};
+        window.pilotTrails = {};     // Historial de coordenadas: { id: [[lat, lng], [lat, lng]] }
+        window.pilotPolylines = {};  // Líneas dibujadas en el mapa: { id: L.polyline }
+        
+        window.userLat = null;
+        window.userLng = null;
+        window.userSpeed = 0; // Velocidad en km/h
+        
+        let selectedClient = null;
+        let currentSortMethod = 'distance'; 
+        let gpsAlertShown = false;
+        
+        let sosCountdownInterval;
+        let activeSosTimerInterval;
+        let currentSosMotivo = "";
+
+        // =========================================================================
+        // PERMISOS Y WAKE LOCK (SEGUNDO PLANO)
+        // =========================================================================
+        window.requestAllPermissions = function() {
+            if ('Notification' in window) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        document.getElementById('permissions-modal').classList.add('hidden');
+                        showToast("¡Listo!", "Notificaciones activadas.", "fa-check");
+                        if ('serviceWorker' in navigator) {
+                            try {
+                                navigator.serviceWorker.getRegistrations().then(regs => {
+                                    if(regs && regs.length > 0) regs[0].showNotification("RutasApp", {body:"Permisos listos", icon: "app.jpg"}).catch(e => console.warn(e));
+                                }).catch(e => console.warn("SW getRegistrations error:", e));
+                            } catch(e) {}
+                        }
+                    } else {
+                        alert("⚠️ ACCIÓN REQUERIDA: Has denegado las notificaciones. Para tu seguridad y la de la flota, ve a la configuración y ACTIVA las notificaciones.");
+                        document.getElementById('permissions-modal').classList.add('hidden');
+                    }
+                });
+            } else {
+                alert("Tu dispositivo no soporta notificaciones nativas.");
+                document.getElementById('permissions-modal').classList.add('hidden');
+            }
+            requestLocation();
+        };
+
+        function checkPermissions() {
+            if ('Notification' in window && Notification.permission !== 'granted') {
+                document.getElementById('permissions-modal').classList.remove('hidden');
+            }
+        }
+
+        let wakeLock = null;
+        window.requestWakeLock = async function() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (err) {}
+        }
+
+        // =========================================================================
+        // AUDIO & VIBRACIÓN DE S.O.S
+        // =========================================================================
+        let sosInterval;
+        let isSosPlaying = false;
+        let audioCtx = null;
+        window.manageSOSAudio = function(anySOS) {
+            if (anySOS && !isSosPlaying) {
+                isSosPlaying = true;
+                if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                
+                sosInterval = setInterval(() => {
+                    try {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                        osc.frequency.setValueAtTime(1200, audioCtx.currentTime + 0.2);
+                        gain.gain.setValueAtTime(0.15, audioCtx.currentTime); 
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start();
+                        osc.stop(audioCtx.currentTime + 0.4);
+
+                        if (navigator.vibrate) navigator.vibrate([400, 200]);
+                    } catch(e) {}
+                }, 600); 
+            } else if (!anySOS && isSosPlaying) {
+                isSosPlaying = false;
+                clearInterval(sosInterval);
+                if (navigator.vibrate) navigator.vibrate(0); 
+            }
+        };
+
+        // =========================================================================
+        // INICIO DE LA APLICACIÓN
+        // =========================================================================
+        window.onload = () => {
+            loadClients();
+            requestLocation();
+            setTimeout(syncData, 1000); 
+            setupSearchInput();
+            checkPilotIdentity();
+            
+            // Configurar gestos del Bottom Sheet
+            setTimeout(() => {
+                const handle = document.getElementById('drag-handle');
+                let startY = 0;
+                if(handle) {
+                    handle.addEventListener('touchstart', e => { startY = e.touches[0].clientY; }, {passive: true});
+                    handle.addEventListener('touchend', e => {
+                        let endY = e.changedTouches[0].clientY;
+                        if (startY - endY > 30 && !window.sheetExpanded) { window.toggleSheet(); } 
+                        else if (endY - startY > 30 && window.sheetExpanded) { window.toggleSheet(); }
+                    }, {passive: true});
+                }
+            }, 1000);
+        };
+
+        function checkPilotIdentity() {
+            if(!localStorage.getItem('imade_pilot_name')) {
+                document.getElementById('name-modal').classList.remove('hidden');
+            } else {
+                window.requestWakeLock();
+                try { document.getElementById('background-audio').play().catch(()=>{}); } catch(e){}
+                if (isStandalone) checkPermissions(); 
+            }
+        }
+
+        function savePilotName() {
+            const name = document.getElementById('pilot-name-input').value.trim();
+            if(name.length > 2) {
+                localStorage.setItem('imade_pilot_name', name);
+                document.getElementById('name-modal').classList.add('hidden');
+                showToast("¡Turno iniciado!", "Bienvenido " + name, "fa-user-check");
+                
+                checkPermissions();
+                window.requestWakeLock();
+                
+                // Desbloquea el audio en iOS al interactuar con el botón
+                if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                
+                // Forzar audio silencioso
+                try { 
+                    const bgAudio = document.getElementById('background-audio');
+                    bgAudio.play().catch(e => console.log("Audio play prevented")); 
+                } catch(e){}
+
+                if (window.updatePilotLocation && window.userLat && window.userLng) {
+                    window.updatePilotLocation(window.userLat, window.userLng, window.userSpeed, 'activo', '');
+                }
+            } else {
+                alert("Por favor ingresa un nombre válido.");
+            }
+        }
+
+        // ==========================================
+        // LÓGICA DE S.O.S CON MOTIVOS Y CONTADOR
+        // ==========================================
+        function openSosOptions() {
+            if (!window.userLat || !window.userLng) { showToast("Error", "GPS no disponible para S.O.S"); return; }
+            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if(audioCtx.state === 'suspended') audioCtx.resume(); // Preparar audio para que no falle al enviar
+            document.getElementById('sos-options-modal').classList.remove('hidden');
+        }
+        
+        function closeSosOptions() { 
+            document.getElementById('sos-options-modal').classList.add('hidden'); 
+        }
+
+        function startSosCountdown(motivo) {
+            currentSosMotivo = motivo;
+            document.getElementById('sos-options-modal').classList.add('hidden');
+            document.getElementById('sos-countdown-modal').classList.remove('hidden');
+            document.getElementById('sos-motivo-texto').innerText = motivo;
+            
+            let timeLeft = 5;
+            document.getElementById('sos-pre-timer').innerText = timeLeft;
+            const circle = document.getElementById('countdown-circle');
+            circle.style.strokeDashoffset = "0";
+
+            clearInterval(sosCountdownInterval);
+            sosCountdownInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('sos-pre-timer').innerText = timeLeft;
+                // Animar círculo (283 es la circunferencia aprox)
+                circle.style.strokeDashoffset = (283 - (283 * (timeLeft / 5))).toString();
+                
+                if(timeLeft <= 0) {
+                    clearInterval(sosCountdownInterval);
+                    executeFinalSOS(currentSosMotivo);
+                }
+            }, 1000);
+        }
+
+        function cancelSosCountdown() {
+            clearInterval(sosCountdownInterval);
+            document.getElementById('sos-countdown-modal').classList.add('hidden');
+            showToast("Cancelado", "La alerta no fue enviada.");
+        }
+
+        async function executeFinalSOS(motivo) {
+            document.getElementById('sos-countdown-modal').classList.add('hidden');
+            document.getElementById('sos-active-modal').classList.remove('hidden');
+            
+            // 1. Actualizar estado en Firebase a SOS con el motivo
+            if (window.updatePilotLocation) {
+                window.updatePilotLocation(window.userLat, window.userLng, window.userSpeed, 'SOS', motivo);
+            }
+
+            // Forzar audio en mi propio dispositivo de inmediato
+            if(window.manageSOSAudio) window.manageSOSAudio(true);
+
+            // 2. Enviar Correo Vía Google Apps Script
+            const sosPayload = {
+                type: "SOS",
+                piloto: localStorage.getItem('imade_pilot_name') || 'Anónimo',
+                motivo: motivo,
+                lat: window.userLat,
+                lng: window.userLng,
+                velocidad: window.userSpeed,
+                fecha: new Date().toLocaleString('es-GT')
+            };
+
+            try {
+                // Usamos no-cors porque GAS hace una redirección extraña, pero sí envía el correo.
+                fetch(GOOGLE_APP_SCRIPT_URL, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(sosPayload) 
+                });
+            } catch (err) { console.log("Error mandando POST de SOS"); }
+
+            // 3. Iniciar contador de tiempo activo en pantalla
+            let secondsActive = 0;
+            clearInterval(activeSosTimerInterval);
+            activeSosTimerInterval = setInterval(() => {
+                secondsActive++;
+                let m = Math.floor(secondsActive / 60).toString().padStart(2, '0');
+                let s = (secondsActive % 60).toString().padStart(2, '0');
+                document.getElementById('sos-active-timer').innerText = `${m}:${s}`;
+            }, 1000);
+        }
+
+        function deactivateSOS() {
+            clearInterval(activeSosTimerInterval);
+            document.getElementById('sos-active-modal').classList.add('hidden');
+            if (window.updatePilotLocation && window.userLat && window.userLng) {
+                window.updatePilotLocation(window.userLat, window.userLng, window.userSpeed, 'activo', '');
+            }
+            if(window.manageSOSAudio) window.manageSOSAudio(false);
+            showToast("S.O.S Finalizado", "Tu estado volvió a normal", "fa-check-circle");
+        }
+
+        // =========================================================================
+        // UTILIDADES DE TABS Y VISTAS
+        // =========================================================================
+        function switchTab(tabId) {
+            ['home', 'search', 'register', 'map', 'pilots'].forEach(id => {
+                document.getElementById(`screen-${id}`).classList.add('hidden');
+                document.getElementById(`screen-${id}`).classList.remove('screen-fade');
+            });
+            
+            const selectedScreen = document.getElementById(`screen-${tabId}`);
+            selectedScreen.classList.remove('hidden');
+            void selectedScreen.offsetWidth; 
+            selectedScreen.classList.add('screen-fade');
+            
+            document.getElementById('bottom-nav').classList.remove('hidden');
+
+            const btns = document.querySelectorAll('.nav-btn');
+            btns.forEach(btn => {
+                btn.classList.remove('text-imade-dark');
+                btn.classList.add('text-gray-400');
+            });
+
+            const activeBtn = Array.from(btns).find(btn => btn.getAttribute('onclick').includes(tabId));
+            if(activeBtn) {
+                activeBtn.classList.remove('text-gray-400');
+                activeBtn.classList.add('text-imade-dark');
+            }
+
+            if (tabId === 'search') filterClients(); 
+            
+            if (tabId === 'register') {
+                document.getElementById('reg-pilot').value = localStorage.getItem('imade_pilot_name') || 'Anónimo';
+            }
+            
+            if (tabId === 'pilots') {
+                setTimeout(() => {
+                    if (pilotsMap) pilotsMap.invalidateSize(); 
+                    if (window.renderPilotsMap) window.renderPilotsMap(window.latestPilots || []);
+                    if (pilotsMap && window.userLat && window.userLng) {
+                        pilotsMap.setView([window.userLat, window.userLng], 14);
+                    }
+                }, 300);
+            }
+        }
+
+        window.sheetExpanded = false;
+        window.toggleSheet = function() {
+            const sheet = document.getElementById('bottom-sheet');
+            const details = document.getElementById('sheet-details');
+            window.sheetExpanded = !window.sheetExpanded;
+            
+            if (window.sheetExpanded) {
+                sheet.classList.remove('translate-y-[calc(100%-160px)]');
+                sheet.classList.add('translate-y-0');
+                details.classList.remove('opacity-0');
+                details.classList.add('opacity-100');
+            } else {
+                sheet.classList.add('translate-y-[calc(100%-160px)]');
+                sheet.classList.remove('translate-y-0');
+                details.classList.remove('opacity-100');
+                details.classList.add('opacity-0');
+                details.scrollTop = 0; 
+            }
+        };
+
+        window.calculateDistance = function(lat1, lon1, lat2, lon2) {
+            if(!lat1 || !lon1 || !lat2 || !lon2) return null;
+            const R = 6371; 
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function closeMap() {
+            document.getElementById('screen-map').classList.add('hidden');
+            document.getElementById('screen-search').classList.remove('hidden');
+            document.getElementById('bottom-nav').classList.remove('hidden');
+            if(window.sheetExpanded) window.toggleSheet();
+        }
+
+        function openGpsModal() {
+            if(!gpsAlertShown) {
+                document.getElementById('gps-modal').classList.remove('hidden');
+                gpsAlertShown = true;
+            }
+        }
+        function closeGpsModal() { document.getElementById('gps-modal').classList.add('hidden'); }
+
+        // =========================================================================
+        // GPS Y SEGUIMIENTO DE UBICACIÓN
+        // =========================================================================
+        function requestLocation() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.watchPosition(
+                    (position) => {
+                        window.userLat = position.coords.latitude;
+                        window.userLng = position.coords.longitude;
+                        // Obtener velocidad nativa del GPS (viene en m/s, multiplicar por 3.6 para km/h)
+                        window.userSpeed = position.coords.speed ? Math.round(position.coords.speed * 3.6) : 0;
+                        
+                        const homeStatus = document.getElementById('home-gps-status');
+                        const homeIcon = document.getElementById('home-gps-icon');
+                        if (homeStatus && homeIcon) {
+                            homeStatus.innerHTML = `<span class="text-green-600">${window.userSpeed} km/h</span>`;
+                            homeStatus.className = `text-[11px] font-bold text-gray-800`;
+                            homeIcon.className = `w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors bg-green-50 text-green-500`;
+                            homeIcon.innerHTML = `<i class="fa-solid fa-satellite-dish text-sm"></i>`;
+                        }
+
+                        const pilotStatus = document.getElementById('home-pilot-status');
+                        const pilotIcon = document.getElementById('home-pilot-icon');
+                        if (pilotStatus && pilotIcon) {
+                            pilotStatus.innerHTML = `<span class="text-green-600">Activo</span>`;
+                            pilotIcon.className = `w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors bg-green-50 text-green-500`;
+                        }
+
+                        if(window.updatePilotLocation && document.getElementById('sos-active-modal').classList.contains('hidden')){
+                            window.updatePilotLocation(window.userLat, window.userLng, window.userSpeed, 'activo', '');
+                        }
+
+                        if (window.renderPilotsMap && !document.getElementById('screen-pilots').classList.contains('hidden')) {
+                            window.renderPilotsMap(window.latestPilots || []);
+                        }
+
+                        const locStatus = document.getElementById('location-status');
+                        if (locStatus) {
+                            locStatus.className = `p-4 rounded-2xl flex items-center border transition-colors bg-green-50 border-green-200`;
+                            locStatus.innerHTML = `
+                                <div class="mr-3 text-green-500"><i class="fa-solid fa-circle-check text-xl"></i></div>
+                                <div><h4 class="text-sm font-bold text-green-800">Ubicación Lista</h4><p class="text-[11px] font-bold text-green-600 mt-0.5 uppercase tracking-wide">Coordenadas capturadas</p></div>`;
+                        }
+                    },
+                    (error) => {
+                        console.warn("Error GPS:", error.message);
+                        const homeStatus = document.getElementById('home-gps-status');
+                        const homeIcon = document.getElementById('home-gps-icon');
+                        if (homeStatus && homeIcon) {
+                            homeStatus.innerHTML = `<span class="text-red-500">Apagado</span>`;
+                            homeIcon.className = "w-8 h-8 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0";
+                            homeIcon.innerHTML = `<i class="fa-solid fa-location-crosshairs text-sm"></i>`;
+                        }
+                        
+                        const pilotStatus = document.getElementById('home-pilot-status');
+                        const pilotIcon = document.getElementById('home-pilot-icon');
+                        if (pilotStatus && pilotIcon) {
+                            pilotStatus.innerHTML = `<span class="text-red-500">Inactivo</span>`;
+                            pilotIcon.className = `w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors bg-red-50 text-red-500`;
+                        }
+
+                        if(window.updatePilotLocation) window.updatePilotLocation(0, 0, 0, 'inactivo', '');
+                        openGpsModal();
+                    },
+                    { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+                );
+            }
+        }
+
+        // ==========================================
+        // MAPA DE PILOTOS: CAMIONES, VELOCIDAD Y RASTRO
+        // ==========================================
+        window.renderPilotsMap = function(pilots = []) {
+            let startLat = window.userLat || 14.6349;
+            let startLng = window.userLng || -90.5069;
+            
+            if (!pilotsMap) {
+                pilotsMap = L.map('map-pilots', { zoomControl: false }).setView([startLat, startLng], 14);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(pilotsMap);
+            }
+
+            let displayPilots = [...pilots]; 
+            let myId = window.currentUser ? window.currentUser.uid : 'local-user';
+            let iAmInList = displayPilots.find(p => p.id === myId);
+            
+            if (!iAmInList && window.userLat && window.userLng) {
+                let isMySos = !document.getElementById('sos-active-modal').classList.contains('hidden');
+                displayPilots.push({
+                    id: myId,
+                    name: (localStorage.getItem('imade_pilot_name') || "Piloto") + " (Tú)",
+                    lat: window.userLat,
+                    lng: window.userLng,
+                    speed: window.userSpeed,
+                    status: isMySos ? 'SOS' : 'activo'
+                });
+            }
+            
+            const currentIds = displayPilots.map(p => p.id);
+            for (const id in pilotMarkers) {
+                if (!currentIds.includes(id)) {
+                    pilotsMap.removeLayer(pilotMarkers[id]);
+                    if(window.pilotPolylines[id]) { pilotsMap.removeLayer(window.pilotPolylines[id]); }
+                    delete pilotMarkers[id];
+                    delete window.pilotTrails[id];
+                    delete window.pilotPolylines[id];
+                }
+            }
+
+            displayPilots.forEach(pilot => {
+                if (pilot.status === 'inactivo' || pilot.lat === 0) return; 
+
+                // --- 1. ACTUALIZAR RASTRO (TRAIL) ---
+                if(!window.pilotTrails[pilot.id]) { window.pilotTrails[pilot.id] = []; }
+                
+                // Evitar guardar puntos repetidos si no se ha movido
+                let lastPoint = window.pilotTrails[pilot.id][window.pilotTrails[pilot.id].length - 1];
+                if (!lastPoint || lastPoint[0] !== pilot.lat || lastPoint[1] !== pilot.lng) {
+                    window.pilotTrails[pilot.id].push([pilot.lat, pilot.lng]);
+                    // Mantener solo los últimos 50 puntos para no saturar memoria
+                    if(window.pilotTrails[pilot.id].length > 50) window.pilotTrails[pilot.id].shift(); 
+                }
+
+                // Dibujar línea del rastro
+                const lineColor = pilot.status === 'SOS' ? '#ef4444' : '#36a8e1';
+                if(!window.pilotPolylines[pilot.id]) {
+                    window.pilotPolylines[pilot.id] = L.polyline(window.pilotTrails[pilot.id], {color: lineColor, weight: 4, opacity: 0.5}).addTo(pilotsMap);
+                } else {
+                    window.pilotPolylines[pilot.id].setLatLngs(window.pilotTrails[pilot.id]);
+                    window.pilotPolylines[pilot.id].setStyle({color: lineColor});
+                }
+
+                // --- 2. DIBUJAR CAMIÓN Y VELOCIDAD (MEJORADO VISUALMENTE Y CENTRADO) ---
+                const isSOS = pilot.status === 'SOS';
+                const color = isSOS ? '#ef4444' : '#22387a';
+                const pulseClass = isSOS ? 'sos-danger-blink' : '';
+                const vel = pilot.speed || 0;
+
+                // Estructura contenedora de 140px de ancho para evitar desbordes en el texto.
+                const iconHtml = `
+                    <div style="display: flex; flex-direction: column; align-items: center; width: 140px;">
+                        <div class="${pulseClass}" style='background-color:${color}; width:38px; height:38px; border-radius:10px; border:2px solid white; box-shadow:0 4px 10px rgba(0,0,0,0.4); display:flex; justify-content:center; align-items:center; transition: all 0.3s; position:relative; z-index: 1000;'>
+                            <i class='fa-solid fa-truck' style='color:white; font-size:16px;'></i>
+                            <div style='position:absolute; bottom:-6px; right:-6px; background:#10b981; color:white; font-size:10px; font-weight:900; padding:1px 4px; border-radius:4px; border:1px solid white; line-height:1;'>${vel}</div>
+                        </div>
+                        <div style="background: white; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 12px; margin-top: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); white-space: nowrap; border: 1px solid #e2e8f0; color: #1e293b; z-index: 999;">
+                            ${pilot.name} ${isSOS ? '<span class="animate-ping text-red-500 ml-1">🚨</span>' : ''}
+                        </div>
+                    </div>
+                `;
+
+                // El "iconAnchor" [70, 19] asegura que el centro exacto de la pastilla del camión quede sobre la latitud/longitud
+                const icon = L.divIcon({ className: 'custom-div-icon', html: iconHtml, iconSize: [140, 80], iconAnchor: [70, 19] });
+
+                if (pilotMarkers[pilot.id]) {
+                    pilotMarkers[pilot.id].setLatLng([pilot.lat, pilot.lng]);
+                    pilotMarkers[pilot.id].setIcon(icon);
+                } else {
+                    pilotMarkers[pilot.id] = L.marker([pilot.lat, pilot.lng], { icon }).addTo(pilotsMap);
+                }
+            });
+        }
+        
+        window.centerPilotsMap = function() {
+            if (pilotsMap && window.userLat && window.userLng) {
+                pilotsMap.flyTo([window.userLat, window.userLng], 14, { animate: true, duration: 1 });
+            } else {
+                showToast("Buscando...", "Aún no tenemos tu ubicación GPS.", "fa-location-crosshairs");
+            }
+        }
+
+        // =========================================================================
+        // DIRECTORIO, BÚSQUEDA Y MAPA DE RUTAS
+        // =========================================================================
+        function setupSearchInput() {
+            const input = document.getElementById('search-input');
+            const clearBtn = document.getElementById('clear-search-btn');
+            input.addEventListener('input', function() {
+                if(this.value.length > 0) {
+                    clearBtn.classList.remove('hidden', 'opacity-0');
+                    clearBtn.classList.add('opacity-100');
+                } else {
+                    clearBtn.classList.add('opacity-0');
+                    setTimeout(() => clearBtn.classList.add('hidden'), 200);
+                }
+            });
+        }
+
+        function clearSearch() {
+            const input = document.getElementById('search-input');
+            input.value = ''; input.focus();
+            const clearBtn = document.getElementById('clear-search-btn');
+            clearBtn.classList.add('opacity-0');
+            setTimeout(() => clearBtn.classList.add('hidden'), 200);
+            filterClients();
+        }
+
+        function loadClients() {
+            const stored = localStorage.getItem('app_clientes_imade_v3');
+            if (stored) clients = JSON.parse(stored);
+            else { clients = []; saveToLocalStorage(); }
+            updateClientCount();
+        }
+
+        function saveToLocalStorage() { localStorage.setItem('app_clientes_imade_v3', JSON.stringify(clients)); updateClientCount(); }
+        function updateClientCount() { const countEl = document.getElementById('clients-count'); if(countEl) countEl.innerHTML = `<strong>${clients.length}</strong> listados`; }
+        function changeSort(method) { currentSortMethod = method; filterClients(); }
+
+        function renderClientList(list) {
+            const container = document.getElementById('client-list');
+            container.innerHTML = '';
+            if (list.length === 0) {
+                container.innerHTML = `<div class="flex flex-col items-center justify-center py-16 text-gray-400"><i class="fa-solid fa-folder-open text-5xl mb-4 opacity-40"></i><p class="font-bold text-gray-500">Ningún cliente encontrado</p></div>`;
+                return;
+            }
+            list.forEach(client => {
+                const initial = client.nombre ? client.nombre.charAt(0).toUpperCase() : 'C';
+                let distBadge = '';
+                if (client.distancia !== null && client.distancia !== undefined) {
+                    let distText = client.distancia < 1 ? `${(client.distancia * 1000).toFixed(0)} m` : `${client.distancia.toFixed(1)} km`;
+                    distBadge = `<span class="text-[10px] font-black text-imade-light bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-lg whitespace-nowrap shadow-sm ml-2">${distText}</span>`;
+                }
+                
+                let subtext = "";
+                if (client.direccion) subtext += client.direccion;
+                if (client.municipio) subtext += (subtext ? ', ' : '') + client.municipio;
+                if (!subtext) subtext = "Sin dirección";
+
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-4 active:scale-95 transition-transform cursor-pointer hover:border-blue-200";
+                card.onclick = () => selectClientForRoute(client);
+                card.innerHTML = `<div class="w-12 h-12 rounded-2xl bg-gray-50 text-imade-dark flex items-center justify-center font-black text-lg shrink-0 border border-gray-200">${initial}</div><div class="flex-1 min-w-0"><div class="flex justify-between items-start mb-0.5"><h3 class="font-bold text-gray-900 text-[13px] truncate leading-tight">${client.nombre || 'Sin Nombre'}</h3>${distBadge}</div><p class="text-[11px] text-gray-500 truncate mt-1 font-medium"><span class="font-bold text-gray-800 bg-gray-100 px-1.5 py-0.5 rounded mr-1"># ${client.codigo || 'S/N'}</span> ${subtext}</p></div>`;
+                container.appendChild(card);
+            });
+        }
+
+        function filterClients() {
+            const term = document.getElementById('search-input').value.toLowerCase();
+            let filtered = clients.filter(c => {
+                const nombreMatch = c.nombre && String(c.nombre).toLowerCase().includes(term);
+                const codigoMatch = c.codigo && String(c.codigo).toLowerCase().includes(term);
+                return nombreMatch || codigoMatch;
+            });
+
+            if (window.userLat && window.userLng) { filtered = filtered.map(c => { c.distancia = window.calculateDistance(window.userLat, window.userLng, c.lat, c.lng); return c; }); } 
+            else { filtered = filtered.map(c => { c.distancia = null; return c; }); }
+
+            if (currentSortMethod === 'distance') { filtered.sort((a, b) => { if (a.distancia === null) return 1; if (b.distancia === null) return -1; return a.distancia - b.distancia; }); } 
+            else if (currentSortMethod === 'name') { filtered.sort((a, b) => { let nameA = a.nombre ? String(a.nombre).toLowerCase() : ''; let nameB = b.nombre ? String(b.nombre).toLowerCase() : ''; return nameA.localeCompare(nameB); }); }
+            else if (currentSortMethod === 'code') { filtered.sort((a, b) => { let numA = parseInt(a.codigo); let numB = parseInt(b.codigo); if(!isNaN(numA) && !isNaN(numB)) return numA - numB; return String(a.codigo).localeCompare(String(b.codigo)); }); }
+            renderClientList(filtered);
+        }
+
+        async function syncData() {
+            const icon = document.querySelector('#btn-sync-icon'); 
+            if(icon) icon.classList.add('fa-spin');
+            try {
+                const response = await fetch(GOOGLE_APP_SCRIPT_URL);
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    clients = data; saveToLocalStorage();
+                    if (!document.getElementById('screen-search').classList.contains('hidden')) filterClients(); 
+                    showToast("Sincronizado correctamente", `<strong>${data.length}</strong> clientes en la base`, "fa-cloud-arrow-down");
+                }
+            } catch (error) { 
+                if(event && event.type === 'click') showToast("Sin conexión", "Usando <strong>base local</strong>.", "fa-wifi"); 
+            } 
+            finally { if(icon) icon.classList.remove('fa-spin'); }
+        }
+
+        function selectClientForRoute(client) {
+            selectedClient = client;
+            if (!selectedClient.lat || !selectedClient.lng || (selectedClient.lat === 0 && selectedClient.lng === 0)) { 
+                showToast("Error", "Cliente <strong>no tiene coordenadas</strong>.", "fa-triangle-exclamation"); 
+                return; 
+            }
+            
+            document.getElementById('map-client-name').textContent = client.nombre || 'Sin Nombre';
+            
+            const codeEl = document.getElementById('map-client-code');
+            if (codeEl) codeEl.textContent = `# ${client.codigo || 'S/N'}`;
+
+            const addressTextEl = document.getElementById('map-client-address-text');
+            if (addressTextEl) addressTextEl.textContent = client.direccion || 'N/A';
+
+            const muniEl = document.getElementById('map-client-muni');
+            if (muniEl) muniEl.textContent = client.municipio || 'N/A';
+
+            const deptoEl = document.getElementById('map-client-depto');
+            if (deptoEl) deptoEl.textContent = client.departamento || 'N/A';
+            
+            const phoneContainer = document.getElementById('map-client-phone-container');
+            const phoneLink = document.getElementById('map-client-phone-link');
+            const telStr = String(client.telefono || '').trim(); 
+            
+            if(telStr !== '') {
+                if (phoneLink) {
+                    phoneLink.textContent = telStr;
+                    phoneLink.href = `tel:${telStr.replace(/\s+/g, '')}`;
+                }
+                if (phoneContainer) phoneContainer.classList.remove('hidden');
+            } else {
+                if (phoneContainer) phoneContainer.classList.add('hidden');
+            }
+
+            const coordsEl = document.getElementById('map-client-coords');
+            if (coordsEl) coordsEl.textContent = `Lat: ${client.lat.toFixed(6)}, Lng: ${client.lng.toFixed(6)}`;
+
+            const distBadge = document.getElementById('map-client-distance');
+            if(client.distancia) { 
+                if (distBadge) {
+                    distBadge.textContent = client.distancia < 1 ? `${(client.distancia * 1000).toFixed(0)} m` : `${client.distancia.toFixed(1)} km`; 
+                    distBadge.classList.remove('hidden'); 
+                }
+            } else { 
+                if (distBadge) distBadge.classList.add('hidden'); 
+            }
+            
+            document.getElementById('screen-search').classList.add('hidden'); 
+            document.getElementById('bottom-nav').classList.add('hidden'); 
+            document.getElementById('screen-map').classList.remove('hidden');
+            
+            if(window.sheetExpanded) window.toggleSheet();
+            setTimeout(initMap, 400); 
+        }
+
+        // =========================================================================
+        // MAPA Y TRAZADO DE RUTA (CON PARSE FLOAT PARA EVITAR ERRORES)
+        // =========================================================================
+        function initMap() {
+            let startLat = window.userLat || 14.6349; let startLng = window.userLng || -90.5069;
+            if (!map) { map = L.map('map', { zoomControl: false }).setView([startLat, startLng], 13); L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map); }
+            map.invalidateSize(); drawRoute(startLat, startLng);
+        }
+
+        function drawRoute(startLat, startLng) {
+            document.getElementById('route-loader').classList.remove('hidden');
+            if (routingControl) map.removeControl(routingControl);
+            
+            // ASEGURAMOS QUE LAS COORDENADAS SEAN NÚMEROS Y NO TEXTO
+            const destLat = parseFloat(selectedClient.lat);
+            const destLng = parseFloat(selectedClient.lng);
+            const sLat = parseFloat(startLat);
+            const sLng = parseFloat(startLng);
+            
+            const userIcon = L.divIcon({ className: 'custom-div-icon', html: "<div style='background-color:#36a8e1; width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 3px 8px rgba(0,0,0,0.3);'></div>", iconSize: [20, 20], iconAnchor: [10, 10] });
+            const clientIcon = L.divIcon({ className: 'custom-div-icon', html: "<div style='background-color:#22387a; width:34px; height:34px; border-radius:50%; border:3px solid white; box-shadow:0 4px 10px rgba(0,0,0,0.4); display:flex; justify-content:center; align-items:center;'><i class='fa-solid fa-store' style='color:white; font-size:14px;'></i></div>", iconSize: [34, 34], iconAnchor: [17, 17] });
+            
+            routingControl = L.Routing.control({ 
+                waypoints: [ L.latLng(sLat, sLng), L.latLng(destLat, destLng) ], 
+                router: L.Routing.osrmv1({
+                    serviceUrl: 'https://router.project-osrm.org/route/v1', // Servidor por defecto (más estable para demos)
+                    language: 'es', 
+                    profile: 'driving' 
+                }), 
+                lineOptions: { styles: [{color: '#36a8e1', opacity: 0.9, weight: 6}] }, 
+                createMarker: function(i, waypoint, n) { return L.marker(waypoint.latLng, { icon: (i === 0) ? userIcon : clientIcon }); }, 
+                addWaypoints: false, 
+                draggableWaypoints: false, 
+                fitSelectedRoutes: true, 
+                showAlternatives: false 
+            }).addTo(map);
+            
+            routingControl.on('routesfound', function(e) { 
+                document.getElementById('route-loader').classList.add('hidden'); 
+            });
+            
+            // Si el servidor de OSRM falla, hacemos un fallback de una línea recta
+            routingControl.on('routingerror', function(e) { 
+                document.getElementById('route-loader').classList.add('hidden'); 
+                showToast("Aviso Servidor", "No se pudo trazar la ruta en carretera. Usando línea directa.", "fa-route", "text-orange-500", "bg-orange-50 border-orange-200"); 
+                
+                if(window.fallbackRoute) map.removeLayer(window.fallbackRoute);
+                window.fallbackRoute = L.polyline([[sLat, sLng], [destLat, destLng]], {color: '#ef4444', weight: 4, dashArray: '10, 10'}).addTo(map);
+                
+                L.marker([sLat, sLng], { icon: userIcon }).addTo(map);
+                L.marker([destLat, destLng], { icon: clientIcon }).addTo(map);
+                map.fitBounds(window.fallbackRoute.getBounds(), {padding: [50,50]});
+            });
+        }
+
+        function centerMap() {
+            if (map && window.userLat && window.userLng) map.setView([window.userLat, window.userLng], 15);
+        }
+
+        function openWaze() { if (!selectedClient) return; window.open(`https://waze.com/ul?ll=${selectedClient.lat},${selectedClient.lng}&navigate=yes`, '_blank'); }
+        function openGoogleMaps() { if (!selectedClient) return; let url = (window.userLat && window.userLng) ? `https://www.google.com/maps/dir/?api=1&origin=${window.userLat},${window.userLng}&destination=${selectedClient.lat},${selectedClient.lng}&travelmode=driving` : `https://www.google.com/maps/search/?api=1&query=${selectedClient.lat},${selectedClient.lng}`; window.open(url, '_blank'); }
+
+        // =========================================================================
+        // REGISTRO Y TOAST
+        // =========================================================================
+        async function saveClient(e) {
+            e.preventDefault();
+            
+            const nombreStr = document.getElementById('reg-name').value.trim();
+            const codigoStr = document.getElementById('reg-code').value.trim();
+            const telStr = document.getElementById('reg-phone').value.trim();
+            const deptoStr = document.getElementById('reg-depto').value.trim();
+            const muniStr = document.getElementById('reg-muni').value.trim();
+            const dirStr = document.getElementById('reg-address').value.trim();
+            const paisStr = document.getElementById('reg-pais').value.trim();
+
+            if (!nombreStr || !codigoStr || !telStr || !deptoStr || !muniStr || !dirStr || !paisStr) {
+                showToast("Campos Incompletos", "Debes llenar toda la información del cliente.", "fa-triangle-exclamation", "text-red-500", "bg-red-50 border-red-200");
+                return;
+            }
+
+            if (!window.userLat || !window.userLng) { openGpsModal(); return; }
+            
+            const btnSave = document.getElementById('btn-save'); btnSave.disabled = true; btnSave.innerHTML = '<div class="loader mr-2 border-white border-t-transparent w-5 h-5 border-2"></div> Subiendo...';
+            
+            const newClient = {
+                type: "REGISTRO", 
+                piloto: document.getElementById('reg-pilot').value,
+                nombreCliente: nombreStr,
+                codigoCliente: codigoStr,
+                telefono: telStr,
+                departamento: deptoStr,
+                municipio: muniStr,
+                direccion: dirStr,
+                pais: paisStr,
+                lat: window.userLat,
+                lng: window.userLng,
+                fecha: new Date().toLocaleString('es-GT')
+            };
+
+            clients.unshift({
+                codigo: newClient.codigoCliente,
+                nombre: newClient.nombreCliente,
+                telefono: newClient.telefono,
+                municipio: newClient.municipio,
+                departamento: newClient.departamento,
+                direccion: newClient.direccion,
+                lat: window.userLat,
+                lng: window.userLng,
+                fecha: newClient.fecha
+            });
+            saveToLocalStorage();
+
+            try { await fetch(GOOGLE_APP_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newClient) }); } catch (err) {}
+            setTimeout(() => { 
+                showToast("¡Éxito!", "Cliente registrado exitosamente.", "fa-check"); 
+                document.getElementById('register-form').reset(); 
+                document.getElementById('reg-pais').value = 'Guatemala'; 
+                btnSave.disabled = false; 
+                btnSave.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-2 text-lg"></i> Guardar Cliente'; 
+                switchTab('home'); 
+            }, 800);
+        }
+
+        let toastTimeout;
+        function showToast(title, msg, icon = "fa-bell", textColor = "text-imade-light", bgIcon = "bg-gray-100 border-gray-200") {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-title').innerHTML = title;
+            document.getElementById('toast-msg').innerHTML = msg; 
+            
+            const iconDiv = document.getElementById('toast-icon');
+            iconDiv.className = `w-10 h-10 rounded-full flex items-center justify-center shrink-0 border ${bgIcon}`;
+            iconDiv.innerHTML = `<i class="fa-solid ${icon} ${textColor} text-lg"></i>`;
+            
+            toast.classList.remove('opacity-0', '-translate-y-[150%]', 'pointer-events-none');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('opacity-0', '-translate-y-[150%]', 'pointer-events-none');
+            }, 3500);
+        }
+
+    </script>
+</body>
+</html>
