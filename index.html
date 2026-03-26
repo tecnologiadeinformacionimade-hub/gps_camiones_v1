@@ -18,9 +18,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Rutas CEDIS">
-    <!-- Manifest codificado. ACTUALIZADO a app.png estandarizado -->
-    <link rel="manifest"
-        href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Rutas%20CEDIS%22%2C%22short_name%22%3A%22Rutas%20CEDIS%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%2322387a%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22app.png%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%2C%7B%22src%22%3A%22app.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D'>
+    
+    <!-- Manifest dinámico e íconos estrictos -->
+    <link rel="manifest" id="manifest-link">
     <link rel="apple-touch-icon" href="app.png">
 
     <!-- Tailwind CSS -->
@@ -61,10 +61,6 @@
             height: 100%;
             width: 100%;
             z-index: 10;
-        }
-
-        .leaflet-routing-container {
-            display: none !important;
         }
 
         .glass-panel {
@@ -148,9 +144,9 @@
 
     <script>
         // =====================================================================
-        // SISTEMA DE AUTO-ACTUALIZACIÓN PARA PWAs (VERSIÓN 1.8.1)
+        // SISTEMA DE AUTO-ACTUALIZACIÓN PARA PWAs (VERSIÓN 1.8.2)
         // =====================================================================
-        const APP_VERSION = "1.8.1"; 
+        const APP_VERSION = "1.8.2"; 
         const currentVersion = localStorage.getItem('imade_app_version');
 
         if (currentVersion !== APP_VERSION) {
@@ -173,6 +169,24 @@
                 window.location.reload(true);
             }
         }
+
+        // Inyección dinámica de manifest para garantizar que Android lo lea
+        const manifestData = {
+            "name": "Rutas CEDIS",
+            "short_name": "Rutas CEDIS",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#f8fafc",
+            "theme_color": "#22387a",
+            "icons": [
+                {"src": "app.png", "sizes": "192x192", "type": "image/png"},
+                {"src": "app.png", "sizes": "512x512", "type": "image/png"}
+            ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('manifest-link').setAttribute('href', URL.createObjectURL(manifestBlob));
+        });
     </script>
 </head>
 
@@ -181,8 +195,10 @@
     <!-- PANTALLA DE INSTALACIÓN OBLIGATORIA (PWA) -->
     <div id="install-screen"
         class="fixed inset-0 z-[99999] bg-white flex flex-col items-center justify-center p-6 text-center hidden">
-        <!-- Ícono generalizado que toma app.png -->
-        <img src="app.png" alt="Rutas CEDIS" class="w-32 h-32 rounded-[2rem] shadow-2xl mb-6 object-cover bg-white" onerror="this.src='https://cdn-icons-png.flaticon.com/512/854/854878.png'">
+        
+        <!-- Ícono ESTRICTAMENTE app.png, sin fallbacks confusos -->
+        <img src="app.png" alt="Logo de la App" class="w-32 h-32 rounded-[2rem] shadow-2xl mb-6 object-cover bg-white border border-gray-100">
+        
         <h2 class="text-3xl font-black text-imade-dark mb-3">Instala Rutas CEDIS</h2>
         <p class="text-gray-500 mb-8 font-medium px-4 leading-relaxed text-sm">Para continuar y garantizar que el GPS
             funcione en tiempo real, instala la aplicación dando clic en el botón de abajo.</p>
@@ -392,10 +408,15 @@
                         const data = doc.data();
                         if (now - data.timestamp < 3600000) {
                             pilots.push({ ...data, id: doc.id });
-                            // Se eliminó la validación del doc.id para que a TI TAMBIÉN TE SUENE tu propia alarma S.O.S
+                            
+                            // SI HAY UN SOS, que suene la alarma globalmente
                             if (data.status === 'SOS') {
                                 anySOS = true;
-                                activeSosPilots.push({ ...data, id: doc.id });
+                                
+                                // PERO el Banner visual solo se agrega si el que pide ayuda NO eres tú mismo
+                                if (doc.id !== window.currentUser.uid) {
+                                    activeSosPilots.push({ ...data, id: doc.id });
+                                }
                             }
                         }
                     });
@@ -412,6 +433,7 @@
                         window.dismissSosBanner();
                     }
 
+                    // Mostrar banner SOLAMENTE si hay pilotos activos en SOS que no sean el usuario actual
                     if (anySOS && !window.wasSosActive && activeSosPilots.length > 0) {
                         let sosPilot = activeSosPilots[0];
                         let dist = window.calculateDistance ? window.calculateDistance(window.userLat, window.userLng, sosPilot.lat, sosPilot.lng) : null;
@@ -571,7 +593,7 @@
                         <i class="fa-solid fa-laptop-code text-imade-light"></i>
                         <span>Creado por <strong>Depto. de IT</strong></span>
                     </div>
-                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest" id="app-version-text">Versión 1.8.1</p>
+                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest" id="app-version-text">Versión 1.8.2</p>
                 </div>
             </div>
 
@@ -652,10 +674,10 @@
                         </div>
                     </div>
 
-                    <!-- Ubicación en Mapa -->
-                    <div class="space-y-3 mt-2">
+                    <!-- Ubicación en Mapa ESTRICTAMENTE INMÓVIL -->
+                    <div class="space-y-3 mt-2 pointer-events-none">
                         <h4 class="font-black text-gray-800 text-sm ml-1"><i class="fa-solid fa-location-dot text-imade-light mr-1.5"></i>Ubicación Exacta</h4>
-                        <div id="detail-map" class="w-full h-48 rounded-3xl shadow-sm border border-gray-200 z-10 overflow-hidden relative pointer-events-none"></div>
+                        <div id="detail-map" class="w-full h-48 rounded-3xl shadow-sm border border-gray-200 z-10 overflow-hidden relative"></div>
                     </div>
 
                     <!-- Botones de Navegación -->
@@ -804,7 +826,9 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // PWA setup y bypass de instalación
+        // =====================================================================
+        // PWA SETUP, BYPASS E INSTALACIÓN NATIVA PARA ANDROID
+        // =====================================================================
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
         let deferredPrompt;
         const btnInstall = document.getElementById('btn-install');
@@ -869,9 +893,18 @@
             });
         }
 
+        // INYECCIÓN DE UN SERVICE WORKER BÁSICO PARA FORZAR INSTALACIÓN EN ANDROID
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // Comentado para prevenir errores letales.
+                try {
+                    const swCode = `
+                        self.addEventListener('install', e => self.skipWaiting());
+                        self.addEventListener('activate', e => self.clients.claim());
+                        self.addEventListener('fetch', e => {}); // Necesario para que Android lo detecte como PWA válida
+                    `;
+                    const blob = new Blob([swCode], { type: 'application/javascript' });
+                    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+                } catch(e) {}
             });
         }
 
@@ -1483,7 +1516,7 @@
         }
 
         function initStaticMap(lat, lng) {
-            // MAPA 100% FIJO Y ESTÁTICO (Deshabilitado touch, drag, teclado y zoom)
+            // MAPA ESTRICTAMENTE INMÓVIL
             if (!detailMap) {
                 detailMap = L.map('detail-map', {
                     zoomControl: false,
@@ -1491,7 +1524,8 @@
                     touchZoom: false,
                     scrollWheelZoom: false,
                     doubleClickZoom: false,
-                    keyboard: false
+                    keyboard: false,
+                    boxZoom: false
                 }).setView([lat, lng], 16);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(detailMap);
                 
