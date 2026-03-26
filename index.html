@@ -18,10 +18,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Rutas CEDIS">
-    <!-- Manifest codificado con app.jpg y nombre estricto -->
+    <!-- Manifest codificado. ACTUALIZADO a app.png estandarizado -->
     <link rel="manifest"
-        href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Rutas%20CEDIS%22%2C%22short_name%22%3A%22Rutas%20CEDIS%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%2322387a%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22app.jpg%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fjpeg%22%7D%2C%7B%22src%22%3A%22app.jpg%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fjpeg%22%7D%5D%7D'>
-    <link rel="apple-touch-icon" href="app.jpg">
+        href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Rutas%20CEDIS%22%2C%22short_name%22%3A%22Rutas%20CEDIS%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%2322387a%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22app.png%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%2C%7B%22src%22%3A%22app.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D'>
+    <link rel="apple-touch-icon" href="app.png">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -148,9 +148,9 @@
 
     <script>
         // =====================================================================
-        // SISTEMA DE AUTO-ACTUALIZACIÓN PARA PWAs (VERSIÓN 1.7.0)
+        // SISTEMA DE AUTO-ACTUALIZACIÓN PARA PWAs (VERSIÓN 1.8.0)
         // =====================================================================
-        const APP_VERSION = "1.7.0"; // Actualizado para forzar limpiar caché
+        const APP_VERSION = "1.8.0"; 
         const currentVersion = localStorage.getItem('imade_app_version');
 
         if (currentVersion !== APP_VERSION) {
@@ -169,7 +169,6 @@
                     for (let name of names) caches.delete(name);
                 });
             }
-            // Forzar recarga solo si hubo cambio real
             if (currentVersion) {
                 window.location.reload(true);
             }
@@ -182,8 +181,8 @@
     <!-- PANTALLA DE INSTALACIÓN OBLIGATORIA (PWA) -->
     <div id="install-screen"
         class="fixed inset-0 z-[99999] bg-white flex flex-col items-center justify-center p-6 text-center hidden">
-        <!-- Ícono generalizado que toma app.jpg -->
-        <img src="app.jpg" alt="Rutas CEDIS" class="w-32 h-32 rounded-[2rem] shadow-2xl mb-6 object-cover bg-white" onerror="this.src='https://cdn-icons-png.flaticon.com/512/854/854878.png'">
+        <!-- Ícono generalizado que toma app.png -->
+        <img src="app.png" alt="Rutas CEDIS" class="w-32 h-32 rounded-[2rem] shadow-2xl mb-6 object-cover bg-white" onerror="this.src='https://cdn-icons-png.flaticon.com/512/854/854878.png'">
         <h2 class="text-3xl font-black text-imade-dark mb-3">Instala Rutas CEDIS</h2>
         <p class="text-gray-500 mb-8 font-medium px-4 leading-relaxed text-sm">Para continuar y garantizar que el GPS
             funcione en tiempo real, instala la aplicación dando clic en el botón de abajo.</p>
@@ -277,7 +276,7 @@
         </button>
     </div>
 
-    <!-- ANUNCIO S.O.S RECIBIDO (MEDIA PANTALLA) PARA ANDROID/IOS FALLBACK -->
+    <!-- ANUNCIO S.O.S RECIBIDO (MEDIA PANTALLA) -->
     <div id="sos-receive-modal"
         class="fixed inset-x-0 top-0 h-[50dvh] bg-red-600/95 backdrop-blur-xl z-[99996] hidden flex flex-col items-center justify-center p-6 text-center shadow-[0_20px_50px_rgba(220,38,38,0.5)] transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] -translate-y-full rounded-b-[40px] border-b-4 border-red-400">
         <button onclick="dismissSosBanner()"
@@ -306,7 +305,6 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'rutas-imade-pro';
         const configStr = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
 
-        // Lógica corregida para inicializar config (prioriza el ambiente externo si existe)
         let envConfig = {};
         try { envConfig = JSON.parse(configStr); } catch (e) { }
 
@@ -331,7 +329,6 @@
 
             const initAuth = async () => {
                 try {
-                    // Cumplimiento estricto de autenticación para entornos en la nube
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                         await signInWithCustomToken(auth, __initial_auth_token);
                     } else {
@@ -351,7 +348,6 @@
                     window.currentUser = user;
                     window.startPilotsListener();
                     if (window.userLat && window.userLng) {
-                        // Solo actualiza si no está en medio de un SOS activo
                         if (document.getElementById('sos-active-modal').classList.contains('hidden')) {
                             window.updatePilotLocation(window.userLat, window.userLng, 'activo');
                         }
@@ -366,6 +362,8 @@
                     await setDoc(pilotRef, {
                         lat, lng, status,
                         name: localStorage.getItem('imade_pilot_name') || "Piloto Anónimo",
+                        speed: window.userSpeed || 0,
+                        distance: window.totalDistance || 0,
                         timestamp: Date.now()
                     });
                 } catch (error) {
@@ -373,7 +371,6 @@
                 }
             };
 
-            // Función para ocultar el anuncio de SOS manualmente (El sonido no se apaga aquí)
             window.dismissSosBanner = function () {
                 const sosBanner = document.getElementById('sos-receive-modal');
                 sosBanner.classList.remove('translate-y-0');
@@ -382,7 +379,7 @@
             };
 
             window.startPilotsListener = () => {
-                if (!window.currentUser) return; // Regla estricta: auth before query
+                if (!window.currentUser) return;
                 const pilotsCol = collection(window.firebaseDb, 'artifacts', window.firebaseAppId, 'public', 'data', 'pilotos');
 
                 onSnapshot(pilotsCol, (snapshot) => {
@@ -393,10 +390,10 @@
 
                     snapshot.forEach(doc => {
                         const data = doc.data();
-                        // Expiración si el timestamp es muy viejo (>1hr)
                         if (now - data.timestamp < 3600000) {
                             pilots.push({ ...data, id: doc.id });
-                            if (data.status === 'SOS' && doc.id !== window.currentUser.uid) {
+                            // Se eliminó la validación del doc.id para que a TI TAMBIÉN TE SUENE tu propia alarma S.O.S
+                            if (data.status === 'SOS') {
                                 anySOS = true;
                                 activeSosPilots.push({ ...data, id: doc.id });
                             }
@@ -411,18 +408,15 @@
 
                     if (window.manageSOSAudio) window.manageSOSAudio(anySOS);
 
-                    // Ocultar banner si ya no hay SOS en curso
                     if (!anySOS && window.wasSosActive) {
                         window.dismissSosBanner();
                     }
 
-                    // LÓGICA AGRESIVA DE NOTIFICACIONES Y ANUNCIO S.O.S
                     if (anySOS && !window.wasSosActive && activeSosPilots.length > 0) {
                         let sosPilot = activeSosPilots[0];
                         let dist = window.calculateDistance ? window.calculateDistance(window.userLat, window.userLng, sosPilot.lat, sosPilot.lng) : null;
                         let distStr = dist ? dist.toFixed(1) + ' km' : 'distancia desconocida';
 
-                        // 1. Mostrar el Banner Visual Interno (Media Pantalla)
                         document.getElementById('sos-receive-text').innerHTML = `El piloto <strong>${sosPilot.name}</strong> solicita apoyo urgente a <strong>${distStr}</strong>.`;
                         const sosBanner = document.getElementById('sos-receive-modal');
                         sosBanner.classList.remove('hidden');
@@ -433,15 +427,13 @@
                             });
                         });
 
-                        // 2. Intentar despertar la pantalla manteniendo el WakeLock activo
                         if (window.requestWakeLock) window.requestWakeLock();
 
-                        // 3. Notificación OS Push
                         const notifTitle = "🚨 ALERTA S.O.S 🚨";
                         const notifOptions = {
                             body: `URGENTE: ${sosPilot.name} solicita apoyo a ${distStr}.`,
-                            icon: "https://cdn-icons-png.flaticon.com/512/854/854878.png",
-                            badge: "https://cdn-icons-png.flaticon.com/512/854/854878.png",
+                            icon: "app.png",
+                            badge: "app.png",
                             vibrate: [500, 250, 500, 250, 1000, 250, 500, 250, 500],
                             requireInteraction: true,
                             tag: 'sos-alert', 
@@ -579,7 +571,7 @@
                         <i class="fa-solid fa-laptop-code text-imade-light"></i>
                         <span>Creado por <strong>Depto. de IT</strong></span>
                     </div>
-                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest" id="app-version-text">Versión 1.7.0</p>
+                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest" id="app-version-text">Versión 1.8.0</p>
                 </div>
             </div>
 
@@ -663,7 +655,7 @@
                     <!-- Ubicación en Mapa -->
                     <div class="space-y-3 mt-2">
                         <h4 class="font-black text-gray-800 text-sm ml-1"><i class="fa-solid fa-location-dot text-imade-light mr-1.5"></i>Ubicación Exacta</h4>
-                        <div id="detail-map" class="w-full h-48 rounded-3xl shadow-sm border border-gray-200 z-10 overflow-hidden relative"></div>
+                        <div id="detail-map" class="w-full h-48 rounded-3xl shadow-sm border border-gray-200 z-10 overflow-hidden relative pointer-events-none"></div>
                     </div>
 
                     <!-- Botones de Navegación -->
@@ -889,9 +881,13 @@
         let detailMap = null;
         let detailMarker = null;
 
+        // Variables de trayecto
         window.userLat = null;
         window.userLng = null;
-        window.userSpeed = null; // Guardar la velocidad reportada por el GPS
+        window.lastLat = null;
+        window.lastLng = null;
+        window.userSpeed = 0; 
+        window.totalDistance = 0; // Distancia acumulada (km)
 
         let selectedClient = null;
         let currentSortMethod = 'distance';
@@ -934,6 +930,8 @@
         let sosInterval;
         let isSosPlaying = false;
         let audioCtx = null;
+        
+        // Sonido de sirena alarmante (Ambulancia/Policía)
         window.manageSOSAudio = function (anySOS) {
             if (anySOS && !isSosPlaying) {
                 isSosPlaying = true;
@@ -944,14 +942,21 @@
                     try {
                         const osc = audioCtx.createOscillator();
                         const gain = audioCtx.createGain();
-                        osc.type = 'square';
-                        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-                        osc.frequency.setValueAtTime(1200, audioCtx.currentTime + 0.2);
-                        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                        osc.type = 'sawtooth';
+
+                        // Sirena de Emergencia (Barrido rápido de agudo a grave)
+                        const now = audioCtx.currentTime;
+                        osc.frequency.setValueAtTime(800, now);
+                        osc.frequency.linearRampToValueAtTime(1200, now + 0.3);
+                        osc.frequency.linearRampToValueAtTime(800, now + 0.6);
+
+                        gain.gain.setValueAtTime(0.3, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+
                         osc.connect(gain);
                         gain.connect(audioCtx.destination);
-                        osc.start();
-                        osc.stop(audioCtx.currentTime + 0.4);
+                        osc.start(now);
+                        osc.stop(now + 0.6);
 
                         if (navigator.vibrate) { navigator.vibrate([400, 200]); }
                     } catch (e) { }
@@ -1077,18 +1082,15 @@
         let mySosInterval;
         let currentSOSReason = "";
 
-        // 1. Abre el modal de Motivo
         window.triggerSOS = function() {
             if (!window.userLat || !window.userLng) { showToast("Error", "GPS no disponible para S.O.S", "fa-triangle-exclamation"); return; }
             document.getElementById('sos-reason-modal').classList.remove('hidden');
         }
 
-        // 2. Cierra modal de Motivo
         window.closeSOSReason = function() {
             document.getElementById('sos-reason-modal').classList.add('hidden');
         }
 
-        // 3. Inicia Cuenta Regresiva de 5 segundos
         window.startSOSCountdown = function(reason) {
             currentSOSReason = reason;
             document.getElementById('sos-reason-modal').classList.add('hidden');
@@ -1116,7 +1118,6 @@
             }, 500);
         }
 
-        // 4. Dispara la Alarma Firebase y manda POST al GAS
         window.executeSOS = function() {
             // UI Update
             document.getElementById('sos-timer').classList.add('hidden');
@@ -1126,16 +1127,15 @@
             document.getElementById('sos-active-title').innerText = "¡S.O.S ACTIVO!";
             document.getElementById('sos-active-desc').innerText = "La flota ha sido notificada y el correo de emergencia fue enviado. Toca el botón verde inferior cuando estés a salvo.";
 
-            // A) Actualizar Firebase (hace sonar a los demás)
+            // A) Actualizar Firebase (hace sonar a los demás y AHORA también al propio celular)
             if (window.updatePilotLocation) window.updatePilotLocation(window.userLat, window.userLng, 'SOS');
 
             // B) Disparar Correo vía Google Apps Script
-            const speedKmH = (window.userSpeed || 0) * 3.6; 
             const payload = {
                 type: "SOS",
                 piloto: localStorage.getItem('imade_pilot_name') || 'Anónimo',
                 motivo: currentSOSReason,
-                velocidad: speedKmH.toFixed(1),
+                velocidad: window.userSpeed.toFixed(1),
                 fecha: new Date().toLocaleString('es-GT'),
                 lat: window.userLat,
                 lng: window.userLng
@@ -1149,14 +1149,12 @@
             }).catch(e => console.error("Error enviando correo S.O.S", e));
         }
 
-        // 5. Cancelar ANTES de que termine los 5s
         window.cancelSOS = function() {
             clearInterval(mySosInterval);
             document.getElementById('sos-active-modal').classList.add('hidden');
             showToast("S.O.S Cancelado", "No se envió la alerta.", "fa-ban");
         }
 
-        // 6. Terminar S.O.S DESPUÉS de haberlo activado
         window.endSOS = function() {
             document.getElementById('sos-active-modal').classList.add('hidden');
             if (window.updatePilotLocation && window.userLat && window.userLng) {
@@ -1183,9 +1181,28 @@
             if ("geolocation" in navigator) {
                 navigator.geolocation.watchPosition(
                     (position) => {
-                        window.userLat = position.coords.latitude;
-                        window.userLng = position.coords.longitude;
-                        window.userSpeed = position.coords.speed || 0; // Guardamos velocidad
+                        const currentLat = position.coords.latitude;
+                        const currentLng = position.coords.longitude;
+                        const speedMps = position.coords.speed || 0; 
+                        
+                        window.userSpeed = speedMps * 3.6; // Convertir m/s a km/h
+                        
+                        // Lógica de acumulación de Distancia (Filtra saltos de GPS menores a 20 metros)
+                        if (window.lastLat && window.lastLng) {
+                            const distTraveled = window.calculateDistance(window.lastLat, window.lastLng, currentLat, currentLng);
+                            if (distTraveled > 0.02) { // Solo si se movió más de 20 metros
+                                window.totalDistance = (window.totalDistance || 0) + distTraveled;
+                                window.lastLat = currentLat;
+                                window.lastLng = currentLng;
+                            }
+                        } else {
+                            window.lastLat = currentLat;
+                            window.lastLng = currentLng;
+                            window.totalDistance = 0;
+                        }
+                        
+                        window.userLat = currentLat;
+                        window.userLng = currentLng;
 
                         const homeStatus = document.getElementById('home-gps-status');
                         const homeIcon = document.getElementById('home-gps-icon');
@@ -1265,6 +1282,8 @@
                     name: (localStorage.getItem('imade_pilot_name') || "Piloto") + " (Tú)",
                     lat: window.userLat,
                     lng: window.userLng,
+                    speed: window.userSpeed || 0,
+                    distance: window.totalDistance || 0,
                     status: isMySos ? 'SOS' : 'activo'
                 });
             }
@@ -1284,12 +1303,19 @@
                 const color = isSOS ? '#ef4444' : '#36a8e1';
                 const pulseClass = isSOS ? 'sos-danger-blink' : '';
                 const iconCls = isSOS ? 'fa-triangle-exclamation' : 'fa-truck-fast';
+                
+                // Formateando Velocidad y Distancia
+                const speedText = pilot.speed ? `<i class="fa-solid fa-gauge-high"></i> ${pilot.speed.toFixed(1)} km/h` : '<i class="fa-solid fa-gauge-high"></i> 0 km/h';
+                const distText = pilot.distance ? `<i class="fa-solid fa-route"></i> ${pilot.distance.toFixed(1)} km` : '<i class="fa-solid fa-route"></i> 0 km';
 
-                // CORRECCIÓN: Nombre ENCIMA del circulito
                 const iconHtml = `
                     <div style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 30px; height: 30px;">
-                        <div style="position: absolute; bottom: 35px; background: white; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); white-space: nowrap; border: 1px solid #e2e8f0; color: #1e293b; z-index: 1000; display:flex; align-items:center; gap:4px;">
-                            ${pilot.name} ${isSOS ? '<span style="color:red; animation: ping 1s infinite;">🚨</span>' : ''}
+                        <div style="position: absolute; bottom: 35px; background: white; padding: 5px 8px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border: 1px solid #e2e8f0; color: #1e293b; z-index: 1000; display:flex; flex-direction: column; align-items:center; gap:2px; min-width: 100px;">
+                            <span style="font-size:11px; font-weight: 800; white-space: nowrap;">${pilot.name} ${isSOS ? '<span style="color:red; animation: ping 1s infinite;">🚨</span>' : ''}</span>
+                            <div style="display:flex; gap:8px; color:#64748b; font-size:10px; font-weight: 600; white-space: nowrap;">
+                                <span>${speedText}</span>
+                                <span>${distText}</span>
+                            </div>
                         </div>
                         <div class="${pulseClass}" style='background-color:${color}; width:30px; height:30px; border-radius:50%; border:3px solid white; box-shadow:0 4px 10px rgba(0,0,0,0.4); display:flex; justify-content:center; align-items:center; position:relative; z-index: 999;'>
                             <i class='fa-solid ${iconCls}' style='color:white; font-size:12px;'></i>
@@ -1297,7 +1323,6 @@
                     </div>
                 `;
 
-                // Anchor ajustado al centro del círculo de 30x30
                 const icon = L.divIcon({ className: 'custom-div-icon', html: iconHtml, iconSize: [30, 30], iconAnchor: [15, 15] });
 
                 if (pilotMarkers[pilot.id]) {
@@ -1458,13 +1483,15 @@
         }
 
         function initStaticMap(lat, lng) {
+            // MAPA 100% FIJO Y ESTÁTICO (Deshabilitado touch, drag, teclado y zoom)
             if (!detailMap) {
                 detailMap = L.map('detail-map', {
                     zoomControl: false,
-                    dragging: true,
-                    touchZoom: true,
+                    dragging: false,
+                    touchZoom: false,
                     scrollWheelZoom: false,
-                    doubleClickZoom: false
+                    doubleClickZoom: false,
+                    keyboard: false
                 }).setView([lat, lng], 16);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(detailMap);
                 
