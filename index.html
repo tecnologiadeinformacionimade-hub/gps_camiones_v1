@@ -16,8 +16,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="RutasApp">
-    <!-- Manifest codificado referenciando app.jpg -->
-    <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22RutasApp%20Grupo%20Imade%22%2C%22short_name%22%3A%22RutasApp%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%2322387a%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22app.jpg%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fjpeg%22%7D%2C%7B%22src%22%3A%22app.jpg%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fjpeg%22%7D%5D%7D'>
+    
+    <!-- El Manifest se inyectará dinámicamente vía JS para evitar el error de "Acceso Directo" en Android -->
+    <link rel="manifest" id="dynamic-manifest" href="">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -41,9 +42,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Leaflet CSS -->
+    <!-- Leaflet CSS (Nativo y sin dependencias extrañas) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
     
     <style>
         body { 
@@ -52,7 +52,6 @@
             background-color: #000; 
         }
         #map, #map-pilots { height: 100%; width: 100%; z-index: 10; }
-        .leaflet-routing-container { display: none !important; } 
         
         .glass-panel { 
             background: rgba(255, 255, 255, 0.85); 
@@ -94,54 +93,64 @@
         /* Animación agresiva para SOS */
         @keyframes sosBlink { 0%, 100% { background-color: #ef4444; transform: scale(1); } 50% { background-color: #991b1b; transform: scale(1.1); } }
         .sos-danger-blink { animation: sosBlink 0.4s infinite; border: 3px solid white !important; }
-    </style>
+
+        /* NUEVA Animación de la ruta trazada en el mapa */
+        .animated-route-line {
+            stroke-dasharray: 12, 16;
+            animation: flowRoute 1s linear infinite;
+        }
+        @keyframes flowRoute {
+            to { stroke-dashoffset: -28; }
+        }
+    </script>
 
     <script>
         // =====================================================================
-        // SITEMA DE AUTO-ACTUALIZACIÓN PARA PWAs (VERSIÓN 1.0.13 - MODO NUCLEAR)
+        // SITEMA DE AUTO-ACTUALIZACIÓN Y MANIFEST DINÁMICO (VERSIÓN 1.0.14)
         // =====================================================================
-        const APP_VERSION = "1.0.13"; 
+        const APP_VERSION = "1.0.14"; 
         const currentVersion = localStorage.getItem('imade_app_version');
         
         if (currentVersion !== APP_VERSION) {
             console.log("Nueva versión detectada. Aplicando limpieza extrema...");
             localStorage.setItem('imade_app_version', APP_VERSION);
-            
-            // 1. Borrar Service Workers viejos
             if ('serviceWorker' in navigator) {
-                try {
-                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                        for(let registration of registrations) { registration.unregister(); }
-                    }).catch(e => console.warn("SW error:", e));
-                } catch(e) {}
+                try { navigator.serviceWorker.getRegistrations().then(r => { for(let i of r) i.unregister(); }); } catch(e) {}
             }
-            // 2. Borrar todas las cachés
-            if ('caches' in window) {
-                caches.keys().then(function(names) {
-                    for (let name of names) caches.delete(name);
-                });
-            }
-            // 3. Forzar recarga modificando la URL para evitar caché del navegador
-            setTimeout(() => { 
-                const cleanUrl = window.location.href.split('?')[0];
-                window.location.href = cleanUrl + '?v=' + new Date().getTime(); 
-            }, 600);
+            if ('caches' in window) { caches.keys().then(n => { for (let x of n) caches.delete(x); }); }
+            setTimeout(() => { window.location.href = window.location.href.split('?')[0] + '?v=' + new Date().getTime(); }, 600);
         }
+
+        // Inyectar Manifest real para forzar la instalación como App y no como acceso directo
+        const manifestJSON = {
+            "name": "RutasApp Grupo Imade",
+            "short_name": "RutasApp",
+            "description": "App de logística y S.O.S.",
+            "start_url": "./",
+            "display": "standalone",
+            "background_color": "#f8fafc",
+            "theme_color": "#22387a",
+            "icons": [
+                { "src": "app.jpg", "sizes": "192x192", "type": "image/jpeg", "purpose": "any maskable" },
+                { "src": "app.jpg", "sizes": "512x512", "type": "image/jpeg", "purpose": "any maskable" }
+            ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestJSON)], {type: 'application/manifest+json'});
+        document.getElementById('dynamic-manifest').href = URL.createObjectURL(manifestBlob);
     </script>
 </head>
 <body class="text-gray-800 antialiased h-[100dvh] w-full overflow-hidden flex justify-center bg-gray-100">
 
-    <!-- AUDIO HACK PARA MANTENER LA APP EN SEGUNDO PLANO (WAKE LOCK SEGUNDO PLANO) -->
-    <!-- Este es un MP3 de 1 segundo de silencio total, en bucle -->
+    <!-- AUDIO HACK PARA SEGUNDO PLANO -->
     <audio id="background-audio" loop playsinline preload="auto">
         <source src="data:audio/mp3;base64,//OExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq" type="audio/mpeg">
     </audio>
 
-    <!-- PANTALLA DE INSTALACIÓN OBLIGATORIA (PWA) -->
+    <!-- PANTALLA DE INSTALACIÓN OBLIGATORIA -->
     <div id="install-screen" class="fixed inset-0 z-[99999] bg-white flex flex-col items-center justify-center p-6 text-center hidden">
         <img src="app.jpg" alt="RutasApp" class="w-32 h-32 rounded-3xl shadow-2xl mb-6 object-cover" onerror="this.src='https://cdn-icons-png.flaticon.com/512/854/854878.png'">
         <h2 class="text-3xl font-black text-imade-dark mb-3">Instala RutasApp</h2>
-        <p class="text-gray-500 mb-8 font-medium px-4 leading-relaxed text-sm">Para continuar y garantizar que el GPS funcione en tiempo real (Versión 1.0.13), instala la aplicación dando clic en el botón de abajo.</p>
+        <p class="text-gray-500 mb-8 font-medium px-4 leading-relaxed text-sm">Para continuar y garantizar que el GPS funcione en tiempo real (Versión 1.0.14), instala la aplicación dando clic en el botón de abajo.</p>
         
         <button id="btn-install" class="w-full max-w-xs bg-imade-light text-white font-black py-4 rounded-2xl shadow-[0_10px_20px_rgba(54,168,225,0.3)] active:scale-95 transition-transform text-lg flex items-center justify-center">
             <i class="fa-solid fa-download mr-3"></i> Instalar Ahora
@@ -173,7 +182,7 @@
         </button>
     </div>
 
-    <!-- MURO DE PERMISOS (FORZAR NOTIFICACIONES) -->
+    <!-- MURO DE PERMISOS -->
     <div id="permissions-modal" class="fixed inset-0 bg-black/80 z-[99995] hidden flex-col items-center justify-center backdrop-blur-md px-6 text-center">
         <div class="bg-white p-7 rounded-[32px] w-full max-w-sm text-center shadow-2xl modal-fade">
             <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm">
@@ -187,11 +196,7 @@
         </div>
     </div>
 
-    <!-- ============================================== -->
-    <!-- NUEVAS PANTALLAS DE S.O.S (OPCIONES Y CONTADOR) -->
-    <!-- ============================================== -->
-    
-    <!-- 1. MODAL OPCIONES DE S.O.S (Mejorado Visualmente) -->
+    <!-- 1. MODAL OPCIONES DE S.O.S -->
     <div id="sos-options-modal" class="fixed inset-0 bg-gray-900/95 z-[99990] hidden flex-col items-center justify-center backdrop-blur-md px-4 py-8">
         <div class="w-full max-w-sm bg-white rounded-[32px] p-6 shadow-2xl flex flex-col items-center justify-center text-center modal-fade relative">
             <button onclick="closeSosOptions()" class="absolute top-4 right-4 w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 active:scale-90 hover:bg-gray-200 transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
@@ -227,7 +232,6 @@
         <h2 class="text-3xl font-black text-white mb-2 tracking-tight drop-shadow-md">¿Estás seguro?</h2>
         <p class="text-red-100 text-lg font-medium mb-8">Enviando alerta por: <strong id="sos-motivo-texto" class="text-white bg-red-800 px-3 py-1 rounded-lg shadow-sm">Choque</strong></p>
         
-        <!-- Círculo contador -->
         <div class="relative w-48 h-48 mb-10 flex items-center justify-center">
             <svg class="absolute inset-0 w-full h-full transform -rotate-90 drop-shadow-lg" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="8"></circle>
@@ -241,7 +245,7 @@
         </button>
     </div>
 
-    <!-- 3. PANTALLA DE S.O.S ACTIVO (Alerta disparada) -->
+    <!-- 3. PANTALLA DE S.O.S ACTIVO -->
     <div id="sos-active-modal" class="fixed inset-0 bg-red-900/95 z-[99990] hidden flex-col items-center justify-center backdrop-blur-md px-6 text-center">
         <div class="w-32 h-32 bg-red-500 rounded-full flex items-center justify-center mb-6 animate-pulse shadow-[0_0_50px_rgba(239,68,68,0.6)]">
             <i class="fa-solid fa-satellite-dish text-6xl text-white"></i>
@@ -254,18 +258,20 @@
         </button>
     </div>
 
-    <!-- ANUNCIO S.O.S RECIBIDO (MEDIA PANTALLA) PARA OTROS PILOTOS -->
-    <div id="sos-receive-modal" class="fixed inset-x-0 top-0 h-[50dvh] bg-red-600/95 backdrop-blur-xl z-[99996] hidden flex flex-col items-center justify-center p-6 text-center shadow-[0_20px_50px_rgba(220,38,38,0.5)] transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] -translate-y-full rounded-b-[40px] border-b-4 border-red-400">
-        <button onclick="dismissSosBanner()" class="absolute top-8 right-6 w-12 h-12 bg-black/20 rounded-full text-white flex items-center justify-center hover:bg-black/40 transition-colors active:scale-90">
-            <i class="fa-solid fa-xmark text-2xl"></i>
+    <!-- 4. ANUNCIO S.O.S RECIBIDO (UI MEJORADA ESTILO TARJETA NOTIFICACIÓN) -->
+    <div id="sos-receive-modal" class="fixed top-4 left-4 right-4 sm:left-1/2 sm:w-[400px] sm:-translate-x-1/2 bg-white/95 backdrop-blur-xl z-[99996] hidden flex-col items-center p-6 text-center shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] -translate-y-[150%] rounded-[32px] border border-red-100">
+        <button onclick="dismissSosBanner()" class="absolute top-4 right-4 w-10 h-10 bg-gray-100 rounded-full text-gray-500 flex items-center justify-center hover:bg-gray-200 transition-colors active:scale-90">
+            <i class="fa-solid fa-xmark text-xl"></i>
         </button>
-        <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 animate-pulse text-red-600 shadow-xl relative">
-            <div class="absolute inset-0 border-4 border-white rounded-full animate-ping opacity-50"></div>
-            <i class="fa-solid fa-triangle-exclamation text-5xl"></i>
+        <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mb-4 text-red-600 relative">
+            <div class="absolute inset-0 border-4 border-red-200 rounded-full animate-ping opacity-75"></div>
+            <i class="fa-solid fa-triangle-exclamation text-4xl"></i>
         </div>
-        <h2 class="text-3xl font-black text-white mb-3 tracking-tight drop-shadow-md">¡ALERTA EN FLOTA!</h2>
-        <p id="sos-receive-text" class="text-red-100 text-base font-medium leading-relaxed max-w-xs mx-auto drop-shadow-sm">Un compañero necesita ayuda.</p>
-        <p class="text-white/60 text-xs mt-6"><i class="fa-solid fa-volume-high mr-1"></i> La alarma y vibración continúan</p>
+        <h2 class="text-2xl font-black text-gray-900 mb-2 tracking-tight drop-shadow-sm">¡ALERTA EN FLOTA!</h2>
+        <p id="sos-receive-text" class="text-gray-600 text-sm font-medium leading-relaxed max-w-xs mx-auto">Un compañero necesita ayuda.</p>
+        <div class="mt-5 w-full bg-red-50 text-red-600 rounded-2xl py-3 px-4 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-volume-high animate-pulse"></i> <span class="text-xs font-bold">La alarma está sonando</span>
+        </div>
     </div>
 
     <!-- Firebase Real-time Integration -->
@@ -307,9 +313,6 @@
                     await signInAnonymously(auth); 
                 } catch(error) {
                     console.error("Error Auth Firebase:", error);
-                    setTimeout(() => {
-                        showToast("⚠️ Falta un paso en Firebase", "Ve a tu proyecto > Authentication > y Activa el método 'Anónimo'.", "fa-triangle-exclamation", "text-red-500", "bg-red-50 border-red-200");
-                    }, 2000);
                 }
             };
             initAuth();
@@ -335,15 +338,14 @@
                         timestamp: Date.now()
                     });
                 } catch(error) {
-                    console.error("Error al escribir en la base de datos:", error);
+                    console.error("Error DB:", error);
                 }
             };
 
-            // Función para ocultar el anuncio de SOS manualmente
             window.dismissSosBanner = function() {
                 const sosBanner = document.getElementById('sos-receive-modal');
-                sosBanner.classList.remove('translate-y-0');
-                sosBanner.classList.add('-translate-y-full');
+                sosBanner.classList.remove('translate-y-4');
+                sosBanner.classList.add('-translate-y-[150%]');
                 setTimeout(() => { sosBanner.classList.add('hidden'); }, 500);
             };
 
@@ -378,15 +380,12 @@
                         window.renderPilotsMap(pilots);
                     }
                     
-                    // Reproducir audio tanto si es SOS mío como de otro!
                     if (window.manageSOSAudio) window.manageSOSAudio(mySOS || anyOtherSOS); 
 
-                    // Ocultar banner si ya no hay SOS externo
                     if (!anyOtherSOS && window.wasSosActive) {
                         window.dismissSosBanner();
                     }
 
-                    // LÓGICA AGRESIVA DE NOTIFICACIONES Y ANUNCIO S.O.S (Solo para SOS ajenos)
                     if (anyOtherSOS && !window.wasSosActive && activeSosPilots.length > 0) {
                         let sosPilot = activeSosPilots[0];
                         let mot = sosPilot.motivo ? `(${sosPilot.motivo})` : '';
@@ -396,21 +395,18 @@
                         sosBanner.classList.remove('hidden');
                         requestAnimationFrame(() => {
                             requestAnimationFrame(() => {
-                                sosBanner.classList.remove('-translate-y-full');
-                                sosBanner.classList.add('translate-y-0');
+                                sosBanner.classList.remove('-translate-y-[150%]');
+                                sosBanner.classList.add('translate-y-4');
                             });
                         });
 
-                        // Intentar despertar la pantalla
                         if (window.requestWakeLock) window.requestWakeLock();
 
-                        // Notificación OS Push
                         const notifTitle = "🚨 ALERTA S.O.S " + mot;
                         const notifOptions = {
                             body: `URGENTE: ${sosPilot.name} solicita apoyo.`,
                             icon: "app.jpg",
-                            badge: "app.jpg",
-                            vibrate: [500, 250, 500, 250, 1000, 250, 500, 250, 500],
+                            vibrate: [500, 250, 500, 250, 1000],
                             requireInteraction: true,
                             tag: 'sos-alert',
                             renotify: true
@@ -420,23 +416,15 @@
                             try {
                                 if ('serviceWorker' in navigator) {
                                     navigator.serviceWorker.ready.then(function(registration) {
-                                        registration.showNotification(notifTitle, notifOptions).catch(e => {
-                                            new Notification(notifTitle, notifOptions);
-                                        });
-                                    }).catch(e => {
-                                        new Notification(notifTitle, notifOptions);
-                                    });
-                                } else {
-                                    new Notification(notifTitle, notifOptions);
-                                }
+                                        registration.showNotification(notifTitle, notifOptions).catch(e => new Notification(notifTitle, notifOptions));
+                                    }).catch(e => new Notification(notifTitle, notifOptions));
+                                } else { new Notification(notifTitle, notifOptions); }
                             } catch(e) {}
                         }
                     }
                     window.wasSosActive = anyOtherSOS;
 
-                }, (error) => {
-                    console.error("Error en radar:", error);
-                });
+                }, (error) => { console.error("Error en radar:", error); });
             }
 
             window.addEventListener("beforeunload", () => {
@@ -482,8 +470,8 @@
             <div id="screen-home" class="screen w-full h-full flex flex-col px-5 py-3 overflow-hidden">
                 
                 <div class="flex flex-col items-center justify-center mt-1 mb-3">
-                    <!-- ACTUALIZADO A LOGO.PNG PARA INTERIOR DE LA APP -->
-                    <img src="logo.png" alt="Grupo Imade" class="h-16 w-16 rounded-2xl object-cover mb-3 shadow-md border border-gray-200" onerror="this.src='https://cdn-icons-png.flaticon.com/512/854/854878.png'">
+                    <!-- FIX: LOGO DE LA APP CORREGIDO PARA QUE NO SE DEFORME -->
+                    <img src="logo.png" alt="Grupo Imade" class="h-16 w-auto max-w-[200px] object-contain mb-3 drop-shadow-md" onerror="this.src='https://cdn-icons-png.flaticon.com/512/854/854878.png'">
                     <h2 class="text-2xl font-black text-imade-dark text-center tracking-tight">¡Bienvenido!</h2>
                 </div>
                 
@@ -539,7 +527,7 @@
                         <i class="fa-solid fa-laptop-code text-imade-light"></i>
                         <span>Creado por <strong>Depto. de IT</strong></span>
                     </div>
-                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest" id="app-version-text">Versión 1.0.13</p>
+                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest" id="app-version-text">Versión 1.0.14</p>
                 </div>
             </div>
 
@@ -582,10 +570,6 @@
                 <div class="flex-1 w-full relative">
                     <!-- Mapa en el fondo -->
                     <div id="map" class="absolute inset-0"></div>
-                    <div id="route-loader" class="absolute inset-0 bg-white/50 backdrop-blur-md z-[400] flex flex-col items-center justify-center hidden">
-                        <div class="w-16 h-16 bg-white rounded-3xl shadow-2xl flex items-center justify-center mb-4 border border-blue-50"><div class="loader"></div></div>
-                        <p class="font-bold text-imade-dark bg-white/90 backdrop-blur-md px-5 py-2 rounded-full text-sm shadow-sm">Calculando ruta óptima...</p>
-                    </div>
                 </div>
                 
                 <!-- BOTTOM SHEET DESPLEGABLE -->
@@ -764,115 +748,25 @@
 
     </div>
 
+    <!-- Cargar Leaflet nativo -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 
     <script>
         // CONFIGURA AQUÍ TU URL DE GOOGLE APPS SCRIPT
         const GOOGLE_APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyyDzs_dc8x1FcNqCG37MsqvqE17br6Xzqa64O6j81-qPpl4gHcnST9X8oo3I7t1jjL/exec";
         
         // =========================================================================
-        // PWA SETUP Y BYPASS DE INSTALACIÓN
-        // =========================================================================
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-        let deferredPrompt;
-        const btnInstall = document.getElementById('btn-install');
-        const installInstructions = document.getElementById('install-instructions');
-        const appleInstructions = document.getElementById('apple-instructions');
-        const androidInstructions = document.getElementById('android-instructions');
-        const btnBypass = document.getElementById('btn-bypass');
-
-        if (!isStandalone) {
-            document.getElementById('app').classList.add('hidden');
-            document.getElementById('install-screen').classList.remove('hidden');
-            
-            // FORZAR SIEMPRE LA VISIBILIDAD DEL BOTÓN DE INSTALAR
-            btnInstall.classList.remove('hidden');
-
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-            });
-
-            btnInstall.addEventListener('click', async () => {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    if (outcome === 'accepted') {
-                        btnInstall.classList.add('hidden');
-                        installInstructions.classList.add('hidden');
-                        document.getElementById('installed-msg').classList.remove('hidden');
-                        btnBypass.classList.add('hidden');
-                    }
-                    deferredPrompt = null;
-                } else {
-                    // Si no se soporta prompt nativo, mostramos instrucciones visuales
-                    btnInstall.classList.add('hidden');
-                    installInstructions.classList.remove('hidden');
-                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-                    if (isIOS) {
-                        appleInstructions.classList.remove('hidden');
-                        androidInstructions.classList.add('hidden');
-                    } else {
-                        appleInstructions.classList.add('hidden');
-                        androidInstructions.classList.remove('hidden');
-                    }
-                }
-            });
-
-            btnBypass.addEventListener('click', () => {
-                document.getElementById('install-screen').classList.add('hidden');
-                document.getElementById('app').classList.remove('hidden');
-                if(map) map.invalidateSize();
-                if(pilotsMap) pilotsMap.invalidateSize();
-                checkPermissions(); 
-            });
-
-            window.addEventListener('appinstalled', () => {
-                btnInstall.classList.add('hidden');
-                installInstructions.classList.add('hidden');
-                btnBypass.classList.add('hidden');
-                document.getElementById('installed-msg').classList.remove('hidden');
-            });
-        }
-
-        // SW FIX: Service Worker robusto con la inyección por BLOB mejorada
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                try {
-                    const swCode = `
-                        self.addEventListener('install', (e) => { self.skipWaiting(); });
-                        self.addEventListener('activate', (e) => { 
-                            e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))));
-                            self.clients.claim(); 
-                        });
-                        self.addEventListener('fetch', (e) => {
-                            if (!e.request.url.startsWith('http')) return;
-                            e.respondWith(fetch(e.request, {cache: "no-store"}).catch(() => caches.match(e.request)));
-                        });
-                    `;
-                    const blob = new Blob([swCode], {type: 'application/javascript'});
-                    const url = URL.createObjectURL(blob);
-                    navigator.serviceWorker.register(url).then(reg => {
-                        console.log("Service Worker Activo y Listo para Notificaciones");
-                    }).catch(err => console.log('SW error', err));
-                } catch(e) { console.warn("SW Setup Error:", e); }
-            });
-        }
-
-        // =========================================================================
         // VARIABLES GLOBALES
         // =========================================================================
         let clients = [];
         let map = null, pilotsMap = null;
-        let routingControl = null;
         let pilotMarkers = {};
-        window.pilotTrails = {};     // Historial de coordenadas: { id: [[lat, lng], [lat, lng]] }
-        window.pilotPolylines = {};  // Líneas dibujadas en el mapa: { id: L.polyline }
+        window.pilotTrails = {};     
+        window.pilotPolylines = {};  
         
         window.userLat = null;
         window.userLng = null;
-        window.userSpeed = 0; // Velocidad en km/h
+        window.userSpeed = 0; 
         
         let selectedClient = null;
         let currentSortMethod = 'distance'; 
@@ -891,13 +785,6 @@
                     if (permission === 'granted') {
                         document.getElementById('permissions-modal').classList.add('hidden');
                         showToast("¡Listo!", "Notificaciones activadas.", "fa-check");
-                        if ('serviceWorker' in navigator) {
-                            try {
-                                navigator.serviceWorker.getRegistrations().then(regs => {
-                                    if(regs && regs.length > 0) regs[0].showNotification("RutasApp", {body:"Permisos listos", icon: "app.jpg"}).catch(e => console.warn(e));
-                                }).catch(e => console.warn("SW getRegistrations error:", e));
-                            } catch(e) {}
-                        }
                     } else {
                         alert("⚠️ ACCIÓN REQUERIDA: Has denegado las notificaciones. Para tu seguridad y la de la flota, ve a la configuración y ACTIVA las notificaciones.");
                         document.getElementById('permissions-modal').classList.add('hidden');
@@ -918,11 +805,7 @@
 
         let wakeLock = null;
         window.requestWakeLock = async function() {
-            try {
-                if ('wakeLock' in navigator) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                }
-            } catch (err) {}
+            try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch (err) {}
         }
 
         // =========================================================================
@@ -970,7 +853,6 @@
             setupSearchInput();
             checkPilotIdentity();
             
-            // Configurar gestos del Bottom Sheet
             setTimeout(() => {
                 const handle = document.getElementById('drag-handle');
                 let startY = 0;
@@ -991,7 +873,7 @@
             } else {
                 window.requestWakeLock();
                 try { document.getElementById('background-audio').play().catch(()=>{}); } catch(e){}
-                if (isStandalone) checkPermissions(); 
+                checkPermissions(); // Se checa permiso si o si
             }
         }
 
@@ -1005,11 +887,9 @@
                 checkPermissions();
                 window.requestWakeLock();
                 
-                // Desbloquea el audio en iOS al interactuar con el botón
                 if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if(audioCtx.state === 'suspended') audioCtx.resume();
                 
-                // Forzar audio silencioso
                 try { 
                     const bgAudio = document.getElementById('background-audio');
                     bgAudio.play().catch(e => console.log("Audio play prevented")); 
@@ -1029,13 +909,11 @@
         function openSosOptions() {
             if (!window.userLat || !window.userLng) { showToast("Error", "GPS no disponible para S.O.S"); return; }
             if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if(audioCtx.state === 'suspended') audioCtx.resume(); // Preparar audio para que no falle al enviar
+            if(audioCtx.state === 'suspended') audioCtx.resume(); 
             document.getElementById('sos-options-modal').classList.remove('hidden');
         }
         
-        function closeSosOptions() { 
-            document.getElementById('sos-options-modal').classList.add('hidden'); 
-        }
+        function closeSosOptions() { document.getElementById('sos-options-modal').classList.add('hidden'); }
 
         function startSosCountdown(motivo) {
             currentSosMotivo = motivo;
@@ -1052,7 +930,6 @@
             sosCountdownInterval = setInterval(() => {
                 timeLeft--;
                 document.getElementById('sos-pre-timer').innerText = timeLeft;
-                // Animar círculo (283 es la circunferencia aprox)
                 circle.style.strokeDashoffset = (283 - (283 * (timeLeft / 5))).toString();
                 
                 if(timeLeft <= 0) {
@@ -1072,15 +949,9 @@
             document.getElementById('sos-countdown-modal').classList.add('hidden');
             document.getElementById('sos-active-modal').classList.remove('hidden');
             
-            // 1. Actualizar estado en Firebase a SOS con el motivo
-            if (window.updatePilotLocation) {
-                window.updatePilotLocation(window.userLat, window.userLng, window.userSpeed, 'SOS', motivo);
-            }
-
-            // Forzar audio en mi propio dispositivo de inmediato
+            if (window.updatePilotLocation) { window.updatePilotLocation(window.userLat, window.userLng, window.userSpeed, 'SOS', motivo); }
             if(window.manageSOSAudio) window.manageSOSAudio(true);
 
-            // 2. Enviar Correo Vía Google Apps Script
             const sosPayload = {
                 type: "SOS",
                 piloto: localStorage.getItem('imade_pilot_name') || 'Anónimo',
@@ -1091,17 +962,8 @@
                 fecha: new Date().toLocaleString('es-GT')
             };
 
-            try {
-                // Usamos no-cors porque GAS hace una redirección extraña, pero sí envía el correo.
-                fetch(GOOGLE_APP_SCRIPT_URL, { 
-                    method: 'POST', 
-                    mode: 'no-cors', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify(sosPayload) 
-                });
-            } catch (err) { console.log("Error mandando POST de SOS"); }
+            try { fetch(GOOGLE_APP_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sosPayload) }); } catch (err) {}
 
-            // 3. Iniciar contador de tiempo activo en pantalla
             let secondsActive = 0;
             clearInterval(activeSosTimerInterval);
             activeSosTimerInterval = setInterval(() => {
@@ -1151,18 +1013,12 @@
             }
 
             if (tabId === 'search') filterClients(); 
-            
-            if (tabId === 'register') {
-                document.getElementById('reg-pilot').value = localStorage.getItem('imade_pilot_name') || 'Anónimo';
-            }
-            
+            if (tabId === 'register') { document.getElementById('reg-pilot').value = localStorage.getItem('imade_pilot_name') || 'Anónimo'; }
             if (tabId === 'pilots') {
                 setTimeout(() => {
                     if (pilotsMap) pilotsMap.invalidateSize(); 
                     if (window.renderPilotsMap) window.renderPilotsMap(window.latestPilots || []);
-                    if (pilotsMap && window.userLat && window.userLng) {
-                        pilotsMap.setView([window.userLat, window.userLng], 14);
-                    }
+                    if (pilotsMap && window.userLat && window.userLng) { pilotsMap.setView([window.userLat, window.userLng], 14); }
                 }, 300);
             }
         }
@@ -1204,12 +1060,7 @@
             if(window.sheetExpanded) window.toggleSheet();
         }
 
-        function openGpsModal() {
-            if(!gpsAlertShown) {
-                document.getElementById('gps-modal').classList.remove('hidden');
-                gpsAlertShown = true;
-            }
-        }
+        function openGpsModal() { if(!gpsAlertShown) { document.getElementById('gps-modal').classList.remove('hidden'); gpsAlertShown = true; } }
         function closeGpsModal() { document.getElementById('gps-modal').classList.add('hidden'); }
 
         // =========================================================================
@@ -1221,7 +1072,6 @@
                     (position) => {
                         window.userLat = position.coords.latitude;
                         window.userLng = position.coords.longitude;
-                        // Obtener velocidad nativa del GPS (viene en m/s, multiplicar por 3.6 para km/h)
                         window.userSpeed = position.coords.speed ? Math.round(position.coords.speed * 3.6) : 0;
                         
                         const homeStatus = document.getElementById('home-gps-status');
@@ -1323,18 +1173,14 @@
             displayPilots.forEach(pilot => {
                 if (pilot.status === 'inactivo' || pilot.lat === 0) return; 
 
-                // --- 1. ACTUALIZAR RASTRO (TRAIL) ---
                 if(!window.pilotTrails[pilot.id]) { window.pilotTrails[pilot.id] = []; }
                 
-                // Evitar guardar puntos repetidos si no se ha movido
                 let lastPoint = window.pilotTrails[pilot.id][window.pilotTrails[pilot.id].length - 1];
                 if (!lastPoint || lastPoint[0] !== pilot.lat || lastPoint[1] !== pilot.lng) {
                     window.pilotTrails[pilot.id].push([pilot.lat, pilot.lng]);
-                    // Mantener solo los últimos 50 puntos para no saturar memoria
                     if(window.pilotTrails[pilot.id].length > 50) window.pilotTrails[pilot.id].shift(); 
                 }
 
-                // Dibujar línea del rastro
                 const lineColor = pilot.status === 'SOS' ? '#ef4444' : '#36a8e1';
                 if(!window.pilotPolylines[pilot.id]) {
                     window.pilotPolylines[pilot.id] = L.polyline(window.pilotTrails[pilot.id], {color: lineColor, weight: 4, opacity: 0.5}).addTo(pilotsMap);
@@ -1343,13 +1189,11 @@
                     window.pilotPolylines[pilot.id].setStyle({color: lineColor});
                 }
 
-                // --- 2. DIBUJAR CAMIÓN Y VELOCIDAD (MEJORADO VISUALMENTE Y CENTRADO) ---
                 const isSOS = pilot.status === 'SOS';
                 const color = isSOS ? '#ef4444' : '#22387a';
                 const pulseClass = isSOS ? 'sos-danger-blink' : '';
                 const vel = pilot.speed || 0;
 
-                // Estructura contenedora de 140px de ancho para evitar desbordes en el texto.
                 const iconHtml = `
                     <div style="display: flex; flex-direction: column; align-items: center; width: 140px;">
                         <div class="${pulseClass}" style='background-color:${color}; width:38px; height:38px; border-radius:10px; border:2px solid white; box-shadow:0 4px 10px rgba(0,0,0,0.4); display:flex; justify-content:center; align-items:center; transition: all 0.3s; position:relative; z-index: 1000;'>
@@ -1362,7 +1206,6 @@
                     </div>
                 `;
 
-                // El "iconAnchor" [70, 19] asegura que el centro exacto de la pastilla del camión quede sobre la latitud/longitud
                 const icon = L.divIcon({ className: 'custom-div-icon', html: iconHtml, iconSize: [140, 80], iconAnchor: [70, 19] });
 
                 if (pilotMarkers[pilot.id]) {
@@ -1383,7 +1226,7 @@
         }
 
         // =========================================================================
-        // DIRECTORIO, BÚSQUEDA Y MAPA DE RUTAS
+        // DIRECTORIO Y BÚSQUEDA
         // =========================================================================
         function setupSearchInput() {
             const input = document.getElementById('search-input');
@@ -1538,58 +1381,59 @@
         }
 
         // =========================================================================
-        // MAPA Y TRAZADO DE RUTA (CON PARSE FLOAT PARA EVITAR ERRORES)
+        // NUEVA LÓGICA: MAPA Y TRAZADO ANIMADO CARTOGRÁFICO
         // =========================================================================
         function initMap() {
             let startLat = window.userLat || 14.6349; let startLng = window.userLng || -90.5069;
-            if (!map) { map = L.map('map', { zoomControl: false }).setView([startLat, startLng], 13); L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map); }
-            map.invalidateSize(); drawRoute(startLat, startLng);
+            
+            // Carga de mapa Leaflet nativo 100% puro
+            if (!map) { 
+                map = L.map('map', { zoomControl: false }).setView([startLat, startLng], 13); 
+                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap'
+                }).addTo(map); 
+            }
+            map.invalidateSize(); 
+            drawAnimatedRoute(startLat, startLng);
         }
 
-        function drawRoute(startLat, startLng) {
-            document.getElementById('route-loader').classList.remove('hidden');
-            if (routingControl) map.removeControl(routingControl);
-            
-            // ASEGURAMOS QUE LAS COORDENADAS SEAN NÚMEROS Y NO TEXTO
+        function drawAnimatedRoute(startLat, startLng) {
+            // Parsear Coordenadas Reales
             const destLat = parseFloat(selectedClient.lat);
             const destLng = parseFloat(selectedClient.lng);
             const sLat = parseFloat(startLat);
             const sLng = parseFloat(startLng);
             
+            // Iconos
             const userIcon = L.divIcon({ className: 'custom-div-icon', html: "<div style='background-color:#36a8e1; width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 3px 8px rgba(0,0,0,0.3);'></div>", iconSize: [20, 20], iconAnchor: [10, 10] });
             const clientIcon = L.divIcon({ className: 'custom-div-icon', html: "<div style='background-color:#22387a; width:34px; height:34px; border-radius:50%; border:3px solid white; box-shadow:0 4px 10px rgba(0,0,0,0.4); display:flex; justify-content:center; align-items:center;'><i class='fa-solid fa-store' style='color:white; font-size:14px;'></i></div>", iconSize: [34, 34], iconAnchor: [17, 17] });
             
-            routingControl = L.Routing.control({ 
-                waypoints: [ L.latLng(sLat, sLng), L.latLng(destLat, destLng) ], 
-                router: L.Routing.osrmv1({
-                    serviceUrl: 'https://router.project-osrm.org/route/v1', // Servidor por defecto (más estable para demos)
-                    language: 'es', 
-                    profile: 'driving' 
-                }), 
-                lineOptions: { styles: [{color: '#36a8e1', opacity: 0.9, weight: 6}] }, 
-                createMarker: function(i, waypoint, n) { return L.marker(waypoint.latLng, { icon: (i === 0) ? userIcon : clientIcon }); }, 
-                addWaypoints: false, 
-                draggableWaypoints: false, 
-                fitSelectedRoutes: true, 
-                showAlternatives: false 
+            // Limpiar Dibujos Anteriores
+            if(window.routeLine) map.removeLayer(window.routeLine);
+            if(window.pilotMarkerMap) map.removeLayer(window.pilotMarkerMap);
+            if(window.clientMarkerMap) map.removeLayer(window.clientMarkerMap);
+
+            // Agregar Marcadores
+            window.pilotMarkerMap = L.marker([sLat, sLng], { icon: userIcon }).addTo(map);
+            window.clientMarkerMap = L.marker([destLat, destLng], { icon: clientIcon }).addTo(map);
+
+            // Dibujar Línea de Conexión y Añadirle CSS Animado
+            window.routeLine = L.polyline([[sLat, sLng], [destLat, destLng]], {
+                color: '#36a8e1', 
+                weight: 5, 
+                dashArray: '12, 16',
+                className: 'animated-route-line'
             }).addTo(map);
+
+            // Secuencia de Animación Aérea de Vuelo
+            // 1. Enfocamos al piloto rápidamente
+            map.setView([sLat, sLng], 14, { animate: false });
             
-            routingControl.on('routesfound', function(e) { 
-                document.getElementById('route-loader').classList.add('hidden'); 
-            });
-            
-            // Si el servidor de OSRM falla, hacemos un fallback de una línea recta
-            routingControl.on('routingerror', function(e) { 
-                document.getElementById('route-loader').classList.add('hidden'); 
-                showToast("Aviso Servidor", "No se pudo trazar la ruta en carretera. Usando línea directa.", "fa-route", "text-orange-500", "bg-orange-50 border-orange-200"); 
-                
-                if(window.fallbackRoute) map.removeLayer(window.fallbackRoute);
-                window.fallbackRoute = L.polyline([[sLat, sLng], [destLat, destLng]], {color: '#ef4444', weight: 4, dashArray: '10, 10'}).addTo(map);
-                
-                L.marker([sLat, sLng], { icon: userIcon }).addTo(map);
-                L.marker([destLat, destLng], { icon: clientIcon }).addTo(map);
-                map.fitBounds(window.fallbackRoute.getBounds(), {padding: [50,50]});
-            });
+            // 2. Después de medio segundo, la cámara vuela por el aire hasta que enfoca toda la ruta
+            setTimeout(() => {
+                map.flyToBounds(window.routeLine.getBounds(), { padding: [60, 60], duration: 1.5, easeLinearity: 0.25 });
+            }, 600);
         }
 
         function centerMap() {
