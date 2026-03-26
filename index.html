@@ -19,8 +19,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Rutas CEDIS">
     
-    <!-- Manifest dinámico e íconos estrictos -->
-    <link rel="manifest" id="manifest-link">
+    <!-- Manifest en duro y codificado para obligar a Android a detectar el botón PWA nativo -->
+    <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Rutas%20CEDIS%22%2C%22short_name%22%3A%22Rutas%20CEDIS%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%2322387a%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22app.png%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%2C%7B%22src%22%3A%22app.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D'>
     <link rel="apple-touch-icon" href="app.png">
 
     <!-- Tailwind CSS -->
@@ -144,9 +144,9 @@
 
     <script>
         // =====================================================================
-        // SISTEMA DE AUTO-ACTUALIZACIÓN PARA PWAs (VERSIÓN 1.8.2)
+        // SISTEMA DE AUTO-ACTUALIZACIÓN PARA PWAs (VERSIÓN 1.8.3)
         // =====================================================================
-        const APP_VERSION = "1.8.2"; 
+        const APP_VERSION = "1.8.3"; 
         const currentVersion = localStorage.getItem('imade_app_version');
 
         if (currentVersion !== APP_VERSION) {
@@ -169,24 +169,6 @@
                 window.location.reload(true);
             }
         }
-
-        // Inyección dinámica de manifest para garantizar que Android lo lea
-        const manifestData = {
-            "name": "Rutas CEDIS",
-            "short_name": "Rutas CEDIS",
-            "start_url": ".",
-            "display": "standalone",
-            "background_color": "#f8fafc",
-            "theme_color": "#22387a",
-            "icons": [
-                {"src": "app.png", "sizes": "192x192", "type": "image/png"},
-                {"src": "app.png", "sizes": "512x512", "type": "image/png"}
-            ]
-        };
-        const manifestBlob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('manifest-link').setAttribute('href', URL.createObjectURL(manifestBlob));
-        });
     </script>
 </head>
 
@@ -196,7 +178,7 @@
     <div id="install-screen"
         class="fixed inset-0 z-[99999] bg-white flex flex-col items-center justify-center p-6 text-center hidden">
         
-        <!-- Ícono ESTRICTAMENTE app.png, sin fallbacks confusos -->
+        <!-- Ícono ESTRICTAMENTE app.png SIN fallback (debe llamarse app.png en tu servidor) -->
         <img src="app.png" alt="Logo de la App" class="w-32 h-32 rounded-[2rem] shadow-2xl mb-6 object-cover bg-white border border-gray-100">
         
         <h2 class="text-3xl font-black text-imade-dark mb-3">Instala Rutas CEDIS</h2>
@@ -403,6 +385,7 @@
                     const now = Date.now();
                     let anySOS = false;
                     let activeSosPilots = [];
+                    let amIInSOS = !document.getElementById('sos-active-modal').classList.contains('hidden');
 
                     snapshot.forEach(doc => {
                         const data = doc.data();
@@ -413,7 +396,7 @@
                             if (data.status === 'SOS') {
                                 anySOS = true;
                                 
-                                // PERO el Banner visual solo se agrega si el que pide ayuda NO eres tú mismo
+                                // Recopilamos a los que necesitan ayuda para mostrar el banner (sólo si no somos nosotros)
                                 if (doc.id !== window.currentUser.uid) {
                                     activeSosPilots.push({ ...data, id: doc.id });
                                 }
@@ -427,14 +410,15 @@
                         window.renderPilotsMap(pilots);
                     }
 
+                    // La alarma de audio sí debe sonar aunque tú seas el del problema
                     if (window.manageSOSAudio) window.manageSOSAudio(anySOS);
 
                     if (!anySOS && window.wasSosActive) {
                         window.dismissSosBanner();
                     }
 
-                    // Mostrar banner SOLAMENTE si hay pilotos activos en SOS que no sean el usuario actual
-                    if (anySOS && !window.wasSosActive && activeSosPilots.length > 0) {
+                    // Mostrar banner SOLAMENTE si hay pilotos en SOS (que NO sean el usuario actual), y NO estaba activo, y YO NO ESTOY en SOS.
+                    if (anySOS && !window.wasSosActive && activeSosPilots.length > 0 && !amIInSOS) {
                         let sosPilot = activeSosPilots[0];
                         let dist = window.calculateDistance ? window.calculateDistance(window.userLat, window.userLng, sosPilot.lat, sosPilot.lng) : null;
                         let distStr = dist ? dist.toFixed(1) + ' km' : 'distancia desconocida';
@@ -593,7 +577,7 @@
                         <i class="fa-solid fa-laptop-code text-imade-light"></i>
                         <span>Creado por <strong>Depto. de IT</strong></span>
                     </div>
-                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest" id="app-version-text">Versión 1.8.2</p>
+                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest" id="app-version-text">Versión 1.8.3</p>
                 </div>
             </div>
 
@@ -893,14 +877,16 @@
             });
         }
 
-        // INYECCIÓN DE UN SERVICE WORKER BÁSICO PARA FORZAR INSTALACIÓN EN ANDROID
+        // INYECCIÓN DE UN SERVICE WORKER PARA FORZAR INSTALACIÓN EN ANDROID
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 try {
                     const swCode = `
                         self.addEventListener('install', e => self.skipWaiting());
                         self.addEventListener('activate', e => self.clients.claim());
-                        self.addEventListener('fetch', e => {}); // Necesario para que Android lo detecte como PWA válida
+                        self.addEventListener('fetch', e => {
+                            e.respondWith(fetch(e.request).catch(() => new Response('Offline')));
+                        }); 
                     `;
                     const blob = new Blob([swCode], { type: 'application/javascript' });
                     navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
@@ -908,7 +894,7 @@
             });
         }
 
-        const GOOGLE_APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzB_55sRgxYv6v_OapVak-xAfdX9vPXAIo4f603TdmoQyx6p9v3jd9wQ-umtskkKaA7/exec";
+        const GOOGLE_APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbytG7P5FCmNbk29m-wP4dnL3r_xPbkZJTEMBL_nH5-ByeSNrQ5TWm95fayZp6Cn7w4/exec";
 
         let clients = [];
         let detailMap = null;
