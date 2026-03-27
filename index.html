@@ -51,10 +51,24 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
+        /* PROTECCIÓN ANTI-COPIA DE TEXTO */
         body {
             font-family: 'Inter', sans-serif;
             -webkit-tap-highlight-color: transparent;
             background-color: #000;
+            -webkit-user-select: none;
+            /* Safari */
+            -ms-user-select: none;
+            /* IE 10 and IE 11 */
+            user-select: none;
+            /* Standard syntax */
+        }
+
+        /* Permitir selección solo en inputs y textareas */
+        input,
+        textarea {
+            -webkit-user-select: auto;
+            user-select: auto;
         }
 
         #map,
@@ -183,6 +197,20 @@
     </style>
 
     <script>
+        // =====================================================================
+        // PROTECCIÓN ANTI-INSPECCIÓN DE ELEMENTOS (F12, Click Derecho, etc)
+        // =====================================================================
+        document.addEventListener('contextmenu', event => event.preventDefault()); // Bloquea click derecho
+        document.addEventListener('keydown', (e) => {
+            // Bloquea F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+            if (e.key === 'F12' ||
+                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+                (e.ctrlKey && e.key === 'U')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
         // =====================================================================
         // SISTEMA DE AUTO-ACTUALIZACIÓN PARA PWAs (VERSIÓN 1.8.3)
         // =====================================================================
@@ -1130,6 +1158,31 @@
         let currentPinInput = "";
         let failedAttempts = parseInt(localStorage.getItem('imade_failed_attempts') || '0');
         let isAppLocked = localStorage.getItem('imade_app_locked') === 'true';
+        let idleTimer; // Timer para el bloqueo por inactividad
+
+        // Función que reinicia el contador de inactividad
+        function resetIdleTimer() {
+            clearTimeout(idleTimer);
+            // Solo iniciar el temporizador si NO estamos ya en la pantalla de bloqueo
+            if (document.getElementById('pin-screen').classList.contains('hidden')) {
+                // 4 minutos = 240,000 milisegundos
+                idleTimer = setTimeout(lockAppDueToInactivity, 240000);
+            }
+        }
+
+        // Detectar actividad en la app para resetear el timer
+        ['touchstart', 'mousemove', 'keypress', 'scroll', 'click'].forEach(evt =>
+            document.addEventListener(evt, resetIdleTimer, true)
+        );
+
+        function lockAppDueToInactivity() {
+            showToast("Sesión Bloqueada", "Por seguridad tras 4 min de inactividad.", "fa-lock", "text-red-500", "bg-red-50 border-red-200");
+            document.getElementById('pin-keypad').classList.remove('opacity-50', 'pointer-events-none');
+            document.getElementById('pin-loading').classList.add('hidden');
+            currentPinInput = "";
+            updatePinDots();
+            showPinScreen(); // Mostramos la pantalla de PIN encima de todo
+        }
 
         function initAuthFlow() {
             const savedPin = localStorage.getItem('imade_app_pin');
@@ -1240,6 +1293,9 @@
                     if (audioCtx.state === 'suspended') audioCtx.resume();
 
                     setTimeout(syncData, 1000);
+
+                    // Iniciar el timer de inactividad
+                    resetIdleTimer();
 
                     if (window.updatePilotLocation && window.userLat && window.userLng) {
                         window.updatePilotLocation(window.userLat, window.userLng, 'activo');
