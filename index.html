@@ -212,9 +212,9 @@
         });
 
         // =====================================================================
-        // SISTEMA DE AUTO-ACTUALIZACIÓN PARA PWAs (VERSIÓN 1.9.3)
+        // SISTEMA DE AUTO-ACTUALIZACIÓN PARA PWAs (VERSIÓN 1.9.4)
         // =====================================================================
-        const APP_VERSION = "1.9.3";
+        const APP_VERSION = "1.9.4";
         const currentVersion = localStorage.getItem('imade_app_version');
 
         if (currentVersion !== APP_VERSION) {
@@ -315,7 +315,7 @@
                 class="w-16 h-16 bg-imade-dark text-white rounded-3xl flex items-center justify-center text-3xl mb-6 shadow-[0_10px_20px_rgba(34,56,122,0.2)]">
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
-            <h2 class="text-2xl font-black text-gray-900 mb-2">Ingresa tu PIN</h2>
+            <h2 class="text-2xl font-black text-gray-900 mb-2 text-center" id="pin-screen-title">Ingresa tu PIN</h2>
             <p class="text-[13px] text-gray-500 mb-8 font-medium text-center leading-snug">Digita tu código de acceso de
                 6 dígitos<br>asignado por Administración.</p>
 
@@ -330,7 +330,7 @@
             </div>
 
             <p id="pin-error-msg"
-                class="text-red-500 text-[13px] font-bold h-6 mb-4 opacity-0 transition-opacity flex items-center bg-red-50 px-3 py-1 rounded-lg">
+                class="text-red-500 text-[13px] font-bold h-6 mb-4 opacity-0 transition-opacity flex items-center bg-red-50 px-3 py-1 rounded-lg text-center">
                 Error</p>
 
             <!-- Loading -->
@@ -784,7 +784,7 @@
                         <span>Creado por <strong>Depto. de IT</strong></span>
                     </div>
                     <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest" id="app-version-text">
-                        Versión 1.9.3</p>
+                        Versión 1.9.4</p>
                 </div>
             </div>
 
@@ -1158,7 +1158,7 @@
             });
         }
 
-        const GOOGLE_APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbySNTPMpet3Wp4WfOh9Zh1_yNCihIfqIREmc96FuXNB4dSGPYRNB2ca4oWjSt1UMSbV/exec";
+        const GOOGLE_APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxf94Zj0EDYZvoiGKBRAtSYLsYGhsC4FI4s6fiT3CVxXjAwnudLEb3N7n5ZxAr5ikg4/exec";
 
         // ==========================================================
         // LÓGICA ESTRICTA DE PIN, BLOQUEO Y ESTADOS DE SEGURIDAD
@@ -1313,14 +1313,10 @@
                         showLockUI();
                     } else if (data.reason === "user_blocked") {
                         // Perfil inactivo pero dispositivo no
-                        showPinError("Acceso denegado. Perfil inactivo.");
-                        if (isSilent) showPinScreen();
-                    } else if (data.reason === "wrong_device") {
-                        // Metió un PIN correcto, pero no es su celular asignado
-                        showPinError("PIN amarrado a otro celular.");
+                        showPinError("Acceso denegado. Perfil desactivado.");
                         if (isSilent) showPinScreen();
                     } else {
-                        // Rechazo por PIN incorrecto
+                        // Rechazo por PIN incorrecto O PIN de otro dispositivo (AMBOS SUMAN INTENTOS)
                         if (isSilent) {
                             showPinScreen();
                         } else {
@@ -1334,7 +1330,12 @@
                                 localStorage.setItem('imade_app_locked', 'true');
                                 showLockUI(); // Bloquear totalmente la App
                             } else {
-                                showPinError(`PIN incorrecto. Intento ${failedAttempts}/3`);
+                                // Diferenciar el mensaje de error para el usuario
+                                if (data.reason === "wrong_device") {
+                                    showPinError(`Ese PIN es de otro equipo. Intento ${failedAttempts}/3`);
+                                } else {
+                                    showPinError(`PIN incorrecto. Intento ${failedAttempts}/3`);
+                                }
                             }
                         }
                     }
