@@ -212,9 +212,9 @@
         });
 
         // =====================================================================
-        // SISTEMA DE AUTO-ACTUALIZACIÓN PARA PWAs (VERSIÓN 1.8.3)
+        // SISTEMA DE AUTO-ACTUALIZACIÓN PARA PWAs (VERSIÓN 1.9.3)
         // =====================================================================
-        const APP_VERSION = "1.8.3";
+        const APP_VERSION = "1.9.3";
         const currentVersion = localStorage.getItem('imade_app_version');
 
         if (currentVersion !== APP_VERSION) {
@@ -236,6 +236,16 @@
             if (currentVersion) {
                 window.location.reload(true);
             }
+        }
+
+        // =====================================================================
+        // GENERACIÓN DE ID DE DISPOSITIVO (IMEI VIRTUAL)
+        // =====================================================================
+        let deviceId = localStorage.getItem('imade_device_id');
+        if (!deviceId) {
+            // Crea un ID único como DEV-A1B2C3
+            deviceId = 'DEV-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+            localStorage.setItem('imade_device_id', deviceId);
         }
     </script>
 </head>
@@ -366,21 +376,27 @@
                 <i class="fa-solid fa-user-lock"></i>
                 <div
                     class="absolute -top-1 -right-1 w-8 h-8 bg-red-600 rounded-full text-white flex items-center justify-center text-sm border-2 border-white">
-                    <i class="fa-solid fa-xmark"></i></div>
+                    <i class="fa-solid fa-xmark"></i>
+                </div>
             </div>
             <h2 class="text-3xl font-black text-red-600 mb-3 tracking-tight">BLOQUEADO</h2>
-            <p class="text-gray-600 mb-8 font-medium text-center leading-relaxed text-sm">Has superado los 3 intentos
-                fallidos.<br>La aplicación se ha bloqueado temporalmente por protocolos de seguridad.</p>
+            <p class="text-gray-600 mb-8 font-medium text-center leading-relaxed text-sm">El acceso para este
+                dispositivo ha sido denegado por el servidor.</p>
 
-            <div class="bg-red-50 border border-red-100 rounded-2xl p-5 mb-8 w-full flex items-start gap-3">
+            <div class="bg-red-50 border border-red-100 rounded-2xl p-4 mb-8 w-full flex items-start gap-3">
                 <i class="fa-solid fa-circle-info text-red-400 mt-0.5"></i>
-                <p class="text-[13px] text-red-800 text-left font-medium">Comunícate con el Administrador para que
-                    reactive tu estado (TRUE) en la hoja de control y luego intenta tu PIN de nuevo.</p>
+                <div class="text-left">
+                    <p class="text-[13px] text-red-800 font-medium leading-snug">Comunícate con el Administrador para
+                        que habilite tu acceso indicando el siguiente código:</p>
+                    <p
+                        class="text-[13px] font-black text-red-900 mt-2 bg-red-100 px-3 py-1.5 rounded-lg inline-block border border-red-200">
+                        ID: <span id="display-device-id">----</span></p>
+                </div>
             </div>
 
             <button onclick="showKeypadUI()"
                 class="w-full bg-gray-900 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform flex justify-center items-center">
-                <i class="fa-solid fa-rotate-right mr-2"></i> Reintentar PIN Verificado
+                <i class="fa-solid fa-rotate-right mr-2"></i> Ya fui habilitado (Reintentar)
             </button>
         </div>
     </div>
@@ -651,18 +667,10 @@
                 });
             }
 
+            // Ya no sobreescribimos la inactividad al salir, el visibilitychange de arriba ahora domina.
             window.addEventListener("beforeunload", () => {
                 if (window.updatePilotLocation && window.userLat && window.userLng && localStorage.getItem('imade_app_pin')) {
                     window.updatePilotLocation(window.userLat, window.userLng, 'inactivo');
-                }
-            });
-
-            document.addEventListener("visibilitychange", () => {
-                if (document.visibilityState === 'visible') {
-                    if (window.requestWakeLock) window.requestWakeLock();
-                    if (window.wasSosActive && window.manageSOSAudio) {
-                        window.manageSOSAudio(true);
-                    }
                 }
             });
 
@@ -776,7 +784,7 @@
                         <span>Creado por <strong>Depto. de IT</strong></span>
                     </div>
                     <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest" id="app-version-text">
-                        Versión 1.8.3</p>
+                        Versión 1.9.3</p>
                 </div>
             </div>
 
@@ -1150,7 +1158,7 @@
             });
         }
 
-        const GOOGLE_APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhh0yOdwikQNZgdq3xbNCoe2GinREtIwGE08-lfDwU11vBHHPBwyIdpwihvONv12OB/exec";
+        const GOOGLE_APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbySNTPMpet3Wp4WfOh9Zh1_yNCihIfqIREmc96FuXNB4dSGPYRNB2ca4oWjSt1UMSbV/exec";
 
         // ==========================================================
         // LÓGICA ESTRICTA DE PIN, BLOQUEO Y ESTADOS DE SEGURIDAD
@@ -1217,6 +1225,9 @@
         function showLockUI() {
             document.getElementById('pin-normal-ui').classList.add('hidden');
             document.getElementById('pin-locked-ui').classList.remove('hidden');
+
+            // Mostrar ID para que se lo dicten a IT
+            document.getElementById('display-device-id').innerText = deviceId;
         }
 
         function showKeypadUI() {
@@ -1277,8 +1288,8 @@
             }
 
             try {
-                // Validación vía Google Apps Script (Necesita que la función doGet tenga e.parameter.action === 'verifyPin')
-                const url = GOOGLE_APP_SCRIPT_URL + "?action=verifyPin&pin=" + encodeURIComponent(pinToVerify);
+                // Validación vía Google Apps Script pasando el DEVICE ID (IMEI)
+                const url = GOOGLE_APP_SCRIPT_URL + "?action=verifyPin&pin=" + encodeURIComponent(pinToVerify) + "&deviceId=" + encodeURIComponent(deviceId);
                 const response = await fetch(url);
                 const data = await response.json();
 
@@ -1294,9 +1305,19 @@
                     unlockUI(data.user.nombre);
                     if (!isSilent) showToast("Acceso Autorizado", "Bienvenido " + data.user.nombre, "fa-shield-check", "text-green-500", "bg-green-50 border-green-200");
                 } else {
-                    // Rechazo por estar inactivo (FALSE en Sheets)
-                    if (data.reason === "blocked") {
-                        showPinError("Acceso denegado. Tu perfil está desactivado.");
+                    // Rechazo general
+                    if (data.reason === "device_blocked") {
+                        // El celular entero fue baneado
+                        isAppLocked = true;
+                        localStorage.setItem('imade_app_locked', 'true');
+                        showLockUI();
+                    } else if (data.reason === "user_blocked") {
+                        // Perfil inactivo pero dispositivo no
+                        showPinError("Acceso denegado. Perfil inactivo.");
+                        if (isSilent) showPinScreen();
+                    } else if (data.reason === "wrong_device") {
+                        // Metió un PIN correcto, pero no es su celular asignado
+                        showPinError("PIN amarrado a otro celular.");
                         if (isSilent) showPinScreen();
                     } else {
                         // Rechazo por PIN incorrecto
@@ -1307,6 +1328,8 @@
                             localStorage.setItem('imade_failed_attempts', failedAttempts.toString());
 
                             if (failedAttempts >= 3) {
+                                // BLOQUEAR EXPRESAMENTE EN EL SERVIDOR
+                                fetch(GOOGLE_APP_SCRIPT_URL + "?action=blockDevice&deviceId=" + encodeURIComponent(deviceId));
                                 isAppLocked = true;
                                 localStorage.setItem('imade_app_locked', 'true');
                                 showLockUI(); // Bloquear totalmente la App
@@ -1318,10 +1341,9 @@
                     currentPinInput = ""; updatePinDots();
                 }
             } catch (error) {
-                // SISTEMA FALLBACK (MODO OFFLINE o ERROR DE SCRIPT)
+                // SISTEMA FALLBACK (MODO OFFLINE o ERROR DE RED)
                 const savedPin = localStorage.getItem('imade_app_pin');
-                if (savedPin && pinToVerify === savedPin) {
-                    // Si no hay red, pero el PIN que puso es el que ya tenía guardado localmente, lo dejamos pasar.
+                if (savedPin && pinToVerify === savedPin && !isAppLocked) {
                     unlockUI(localStorage.getItem('imade_pilot_name') || "Piloto");
                     showToast("Modo Offline", "Verificado localmente sin internet.", "fa-wifi", "text-orange-500", "bg-orange-50 border-orange-200");
                 } else {
