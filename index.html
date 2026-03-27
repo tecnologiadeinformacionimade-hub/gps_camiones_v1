@@ -1153,17 +1153,28 @@
         const GOOGLE_APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhh0yOdwikQNZgdq3xbNCoe2GinREtIwGE08-lfDwU11vBHHPBwyIdpwihvONv12OB/exec";
 
         // ==========================================================
-        // LÓGICA DE PIN, BLOQUEO Y ESTADOS DE SEGURIDAD
+        // LÓGICA ESTRICTA DE PIN, BLOQUEO Y ESTADOS DE SEGURIDAD
         // ==========================================================
         let currentPinInput = "";
         let failedAttempts = parseInt(localStorage.getItem('imade_failed_attempts') || '0');
         let isAppLocked = localStorage.getItem('imade_app_locked') === 'true';
         let idleTimer; // Timer para el bloqueo por inactividad
 
-        // Función que reinicia el contador de inactividad
+        // 1. Bloqueo Inmediato al pasar a Segundo Plano (ocultar la app)
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === 'hidden') {
+                const installScreen = document.getElementById('install-screen');
+                // Bloquear solo si ya pasó la pantalla de instalación
+                if (installScreen && installScreen.classList.contains('hidden')) {
+                    lockApp("App en 2do plano. Ingresa PIN");
+                }
+            }
+        });
+
+        // 2. Función que reinicia el contador de inactividad
         function resetIdleTimer() {
             clearTimeout(idleTimer);
-            // Solo iniciar el temporizador si NO estamos ya en la pantalla de bloqueo
+            // Solo iniciar el temporizador si NO estamos en la pantalla de bloqueo
             if (document.getElementById('pin-screen').classList.contains('hidden')) {
                 // 4 minutos = 240,000 milisegundos
                 idleTimer = setTimeout(lockAppDueToInactivity, 240000);
@@ -1177,27 +1188,30 @@
 
         function lockAppDueToInactivity() {
             showToast("Sesión Bloqueada", "Por seguridad tras 4 min de inactividad.", "fa-lock", "text-red-500", "bg-red-50 border-red-200");
-            document.getElementById('pin-keypad').classList.remove('opacity-50', 'pointer-events-none');
-            document.getElementById('pin-loading').classList.add('hidden');
-            currentPinInput = "";
-            updatePinDots();
-            showPinScreen(); // Mostramos la pantalla de PIN encima de todo
+            lockApp("Sesión Expirada (4 min)");
         }
 
         function initAuthFlow() {
-            const savedPin = localStorage.getItem('imade_app_pin');
-            if (savedPin) {
-                // Validación silenciosa con el servidor cada vez que abren la app
-                verifyPinWithServer(savedPin, true);
-            } else {
-                showPinScreen();
-            }
+            // Ya no dejamos entrar directo aunque tengan PIN guardado. Exigimos validación manual.
+            lockApp("Ingresa tu PIN de acceso");
         }
 
-        function showPinScreen() {
-            document.getElementById('pin-screen').classList.remove('hidden');
-            if (isAppLocked) { showLockUI(); }
-            else { showKeypadUI(); }
+        // Manejador Universal para bloquear la interfaz
+        function lockApp(msg = "Ingresa tu PIN") {
+            const pinScreen = document.getElementById('pin-screen');
+            if (pinScreen) {
+                pinScreen.classList.remove('hidden');
+
+                // Actualiza el mensaje
+                const titleEl = document.querySelector('#pin-normal-ui h2');
+                if (titleEl) titleEl.innerText = msg;
+
+                if (isAppLocked) {
+                    showLockUI();
+                } else {
+                    showKeypadUI();
+                }
+            }
         }
 
         function showLockUI() {
@@ -1263,7 +1277,7 @@
             }
 
             try {
-                // Al usar GET, podemos leer el JSON y sortear el problema de CORS en GAS
+                // Validación vía Google Apps Script (Necesita que la función doGet tenga e.parameter.action === 'verifyPin')
                 const url = GOOGLE_APP_SCRIPT_URL + "?action=verifyPin&pin=" + encodeURIComponent(pinToVerify);
                 const response = await fetch(url);
                 const data = await response.json();
@@ -1277,36 +1291,15 @@
                     localStorage.setItem('imade_app_pin', pinToVerify);
                     localStorage.setItem('imade_pilot_name', data.user.nombre);
 
-                    // Actualizar UI
-                    document.getElementById('pin-screen').classList.add('hidden');
-                    document.getElementById('welcome-msg').textContent = "¡Bienvenido, " + data.user.nombre.split(' ')[0] + "!";
-                    document.getElementById('header-pilot-name').textContent = data.user.nombre;
-                    document.getElementById('reg-pilot').value = data.user.nombre;
-
+                    unlockUI(data.user.nombre);
                     if (!isSilent) showToast("Acceso Autorizado", "Bienvenido " + data.user.nombre, "fa-shield-check", "text-green-500", "bg-green-50 border-green-200");
-
-                    // Continuar flujo PWA
-                    checkPermissions();
-                    window.requestWakeLock();
-
-                    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    if (audioCtx.state === 'suspended') audioCtx.resume();
-
-                    setTimeout(syncData, 1000);
-
-                    // Iniciar el timer de inactividad
-                    resetIdleTimer();
-
-                    if (window.updatePilotLocation && window.userLat && window.userLng) {
-                        window.updatePilotLocation(window.userLat, window.userLng, 'activo');
-                    }
                 } else {
-                    // Rechazo
+                    // Rechazo por estar inactivo (FALSE en Sheets)
                     if (data.reason === "blocked") {
                         showPinError("Acceso denegado. Tu perfil está desactivado.");
                         if (isSilent) showPinScreen();
                     } else {
-                        // PIN No existe / Incorrecto
+                        // Rechazo por PIN incorrecto
                         if (isSilent) {
                             showPinScreen();
                         } else {
@@ -1325,13 +1318,44 @@
                     currentPinInput = ""; updatePinDots();
                 }
             } catch (error) {
-                if (!isSilent) showPinError("Error de conexión. Verifica tu internet e intenta de nuevo.");
-                currentPinInput = ""; updatePinDots();
+                // SISTEMA FALLBACK (MODO OFFLINE o ERROR DE SCRIPT)
+                const savedPin = localStorage.getItem('imade_app_pin');
+                if (savedPin && pinToVerify === savedPin) {
+                    // Si no hay red, pero el PIN que puso es el que ya tenía guardado localmente, lo dejamos pasar.
+                    unlockUI(localStorage.getItem('imade_pilot_name') || "Piloto");
+                    showToast("Modo Offline", "Verificado localmente sin internet.", "fa-wifi", "text-orange-500", "bg-orange-50 border-orange-200");
+                } else {
+                    if (!isSilent) showPinError("Error de red y/o PIN incorrecto.");
+                    currentPinInput = ""; updatePinDots();
+                }
             } finally {
                 if (!isSilent) {
                     document.getElementById('pin-keypad').classList.remove('opacity-50', 'pointer-events-none');
                     document.getElementById('pin-loading').classList.add('hidden');
                 }
+            }
+        }
+
+        // Función centralizada para liberar la UI una vez verificados
+        function unlockUI(pilotName) {
+            document.getElementById('pin-screen').classList.add('hidden');
+            document.getElementById('welcome-msg').textContent = "¡Bienvenido, " + pilotName.split(' ')[0] + "!";
+            document.getElementById('header-pilot-name').textContent = pilotName;
+            document.getElementById('reg-pilot').value = pilotName;
+
+            checkPermissions();
+            window.requestWakeLock();
+
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            setTimeout(syncData, 1000);
+
+            // Iniciar el timer de inactividad
+            resetIdleTimer();
+
+            if (window.updatePilotLocation && window.userLat && window.userLng) {
+                window.updatePilotLocation(window.userLat, window.userLng, 'activo');
             }
         }
 
