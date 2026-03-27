@@ -18,9 +18,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Rutas CEDIS">
-    
+
     <!-- Manifest en duro y codificado para obligar a Android a detectar el botón PWA nativo -->
-    <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Rutas%20CEDIS%22%2C%22short_name%22%3A%22Rutas%20CEDIS%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%2322387a%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22app.png%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%2C%7B%22src%22%3A%22app.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D'>
+    <link rel="manifest"
+        href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Rutas%20CEDIS%22%2C%22short_name%22%3A%22Rutas%20CEDIS%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%2322387a%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22app.png%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%2C%7B%22src%22%3A%22app.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D'>
     <link rel="apple-touch-icon" href="app.png">
 
     <!-- Tailwind CSS -->
@@ -97,8 +98,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .screen-fade {
@@ -106,8 +112,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .modal-fade {
@@ -115,8 +128,15 @@
         }
 
         @keyframes modalFadeIn {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
         .select-custom {
@@ -127,18 +147,38 @@
             background-size: 1em;
         }
 
-        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); }
-        .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom, 16px);
+        }
+
+        .pt-safe {
+            padding-top: env(safe-area-inset-top, 0px);
+        }
 
         /* Animación agresiva para SOS */
         @keyframes sosBlink {
-            0%, 100% { background-color: #ef4444; transform: scale(1); }
-            50% { background-color: #991b1b; transform: scale(1.2); }
+
+            0%,
+            100% {
+                background-color: #ef4444;
+                transform: scale(1);
+            }
+
+            50% {
+                background-color: #991b1b;
+                transform: scale(1.2);
+            }
         }
 
         .sos-danger-blink {
             animation: sosBlink 0.4s infinite;
             border: 4px solid white !important;
+        }
+
+        /* Efecto presionado del teclado PIN */
+        .key-btn:active {
+            background-color: #e2e8f0;
+            transform: scale(0.95);
         }
     </style>
 
@@ -146,7 +186,7 @@
         // =====================================================================
         // SISTEMA DE AUTO-ACTUALIZACIÓN PARA PWAs (VERSIÓN 1.8.3)
         // =====================================================================
-        const APP_VERSION = "1.8.3"; 
+        const APP_VERSION = "1.8.3";
         const currentVersion = localStorage.getItem('imade_app_version');
 
         if (currentVersion !== APP_VERSION) {
@@ -177,10 +217,11 @@
     <!-- PANTALLA DE INSTALACIÓN OBLIGATORIA (PWA) -->
     <div id="install-screen"
         class="fixed inset-0 z-[99999] bg-white flex flex-col items-center justify-center p-6 text-center hidden">
-        
+
         <!-- Ícono ESTRICTAMENTE app.png SIN fallback (debe llamarse app.png en tu servidor) -->
-        <img src="app.png" alt="Logo de la App" class="w-32 h-32 rounded-[2rem] shadow-2xl mb-6 object-cover bg-white border border-gray-100">
-        
+        <img src="app.png" alt="Logo de la App"
+            class="w-32 h-32 rounded-[2rem] shadow-2xl mb-6 object-cover bg-white border border-gray-100">
+
         <h2 class="text-3xl font-black text-imade-dark mb-3">Instala Rutas CEDIS</h2>
         <p class="text-gray-500 mb-8 font-medium px-4 leading-relaxed text-sm">Para continuar y garantizar que el GPS
             funcione en tiempo real, instala la aplicación dando clic en el botón de abajo.</p>
@@ -212,12 +253,14 @@
         </div>
 
         <div id="installed-msg" class="hidden flex-col items-center w-full max-w-xs">
-            <div class="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-4 text-4xl shadow-inner">
+            <div
+                class="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-4 text-4xl shadow-inner">
                 <i class="fa-solid fa-check"></i>
             </div>
             <p class="text-imade-dark font-black text-xl">¡Instalación exitosa!</p>
             <p class="text-gray-500 text-sm mt-3 font-medium px-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                Esta pestaña ya no sirve. Ciérrala y abre la aplicación directamente desde la pantalla de inicio de tu celular.</p>
+                Esta pestaña ya no sirve. Ciérrala y abre la aplicación directamente desde la pantalla de inicio de tu
+                celular.</p>
         </div>
 
         <button id="btn-bypass"
@@ -226,11 +269,100 @@
         </button>
     </div>
 
+    <!-- PANTALLA DE ACCESO POR PIN (BÓVEDA DE SEGURIDAD) -->
+    <div id="pin-screen" class="fixed inset-0 z-[99998] bg-white flex flex-col items-center justify-center hidden">
+        <!-- Interfaz de Teclado Normal -->
+        <div id="pin-normal-ui" class="w-full max-w-sm px-6 flex flex-col items-center modal-fade">
+            <div
+                class="w-16 h-16 bg-imade-dark text-white rounded-3xl flex items-center justify-center text-3xl mb-6 shadow-[0_10px_20px_rgba(34,56,122,0.2)]">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <h2 class="text-2xl font-black text-gray-900 mb-2">Ingresa tu PIN</h2>
+            <p class="text-[13px] text-gray-500 mb-8 font-medium text-center leading-snug">Digita tu código de acceso de
+                6 dígitos<br>asignado por Administración.</p>
+
+            <!-- Dots -->
+            <div class="flex gap-4 mb-6">
+                <div class="pin-dot w-4 h-4 rounded-full bg-gray-200 transition-colors shadow-inner"></div>
+                <div class="pin-dot w-4 h-4 rounded-full bg-gray-200 transition-colors shadow-inner"></div>
+                <div class="pin-dot w-4 h-4 rounded-full bg-gray-200 transition-colors shadow-inner"></div>
+                <div class="pin-dot w-4 h-4 rounded-full bg-gray-200 transition-colors shadow-inner"></div>
+                <div class="pin-dot w-4 h-4 rounded-full bg-gray-200 transition-colors shadow-inner"></div>
+                <div class="pin-dot w-4 h-4 rounded-full bg-gray-200 transition-colors shadow-inner"></div>
+            </div>
+
+            <p id="pin-error-msg"
+                class="text-red-500 text-[13px] font-bold h-6 mb-4 opacity-0 transition-opacity flex items-center bg-red-50 px-3 py-1 rounded-lg">
+                Error</p>
+
+            <!-- Loading -->
+            <div id="pin-loading"
+                class="hidden mb-4 flex items-center text-imade-light font-bold text-sm bg-blue-50 px-4 py-2 rounded-xl">
+                <div class="loader mr-3 w-4 h-4 border-2 border-blue-200 border-t-imade-light"></div> Verificando
+                credenciales...
+            </div>
+
+            <!-- Keypad Numérico -->
+            <div id="pin-keypad" class="grid grid-cols-3 gap-x-6 gap-y-4 w-full max-w-[260px] mt-2">
+                <button onclick="pressKey('1')"
+                    class="key-btn h-16 rounded-full bg-gray-50 text-2xl font-black text-gray-800 shadow-sm border border-gray-100 transition-all flex items-center justify-center">1</button>
+                <button onclick="pressKey('2')"
+                    class="key-btn h-16 rounded-full bg-gray-50 text-2xl font-black text-gray-800 shadow-sm border border-gray-100 transition-all flex items-center justify-center">2</button>
+                <button onclick="pressKey('3')"
+                    class="key-btn h-16 rounded-full bg-gray-50 text-2xl font-black text-gray-800 shadow-sm border border-gray-100 transition-all flex items-center justify-center">3</button>
+                <button onclick="pressKey('4')"
+                    class="key-btn h-16 rounded-full bg-gray-50 text-2xl font-black text-gray-800 shadow-sm border border-gray-100 transition-all flex items-center justify-center">4</button>
+                <button onclick="pressKey('5')"
+                    class="key-btn h-16 rounded-full bg-gray-50 text-2xl font-black text-gray-800 shadow-sm border border-gray-100 transition-all flex items-center justify-center">5</button>
+                <button onclick="pressKey('6')"
+                    class="key-btn h-16 rounded-full bg-gray-50 text-2xl font-black text-gray-800 shadow-sm border border-gray-100 transition-all flex items-center justify-center">6</button>
+                <button onclick="pressKey('7')"
+                    class="key-btn h-16 rounded-full bg-gray-50 text-2xl font-black text-gray-800 shadow-sm border border-gray-100 transition-all flex items-center justify-center">7</button>
+                <button onclick="pressKey('8')"
+                    class="key-btn h-16 rounded-full bg-gray-50 text-2xl font-black text-gray-800 shadow-sm border border-gray-100 transition-all flex items-center justify-center">8</button>
+                <button onclick="pressKey('9')"
+                    class="key-btn h-16 rounded-full bg-gray-50 text-2xl font-black text-gray-800 shadow-sm border border-gray-100 transition-all flex items-center justify-center">9</button>
+                <div></div>
+                <button onclick="pressKey('0')"
+                    class="key-btn h-16 rounded-full bg-gray-50 text-2xl font-black text-gray-800 shadow-sm border border-gray-100 transition-all flex items-center justify-center">0</button>
+                <button onclick="deleteKey()"
+                    class="key-btn h-16 rounded-full bg-gray-100 text-xl font-black text-gray-500 shadow-sm border border-gray-200 transition-all flex items-center justify-center"><i
+                        class="fa-solid fa-delete-left"></i></button>
+            </div>
+        </div>
+
+        <!-- Interfaz de Bloqueo Absoluto -->
+        <div id="pin-locked-ui" class="w-full max-w-sm px-6 flex flex-col items-center hidden modal-fade">
+            <div
+                class="w-24 h-24 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-5xl mb-6 shadow-inner border-4 border-white shadow-lg relative">
+                <i class="fa-solid fa-user-lock"></i>
+                <div
+                    class="absolute -top-1 -right-1 w-8 h-8 bg-red-600 rounded-full text-white flex items-center justify-center text-sm border-2 border-white">
+                    <i class="fa-solid fa-xmark"></i></div>
+            </div>
+            <h2 class="text-3xl font-black text-red-600 mb-3 tracking-tight">BLOQUEADO</h2>
+            <p class="text-gray-600 mb-8 font-medium text-center leading-relaxed text-sm">Has superado los 3 intentos
+                fallidos.<br>La aplicación se ha bloqueado temporalmente por protocolos de seguridad.</p>
+
+            <div class="bg-red-50 border border-red-100 rounded-2xl p-5 mb-8 w-full flex items-start gap-3">
+                <i class="fa-solid fa-circle-info text-red-400 mt-0.5"></i>
+                <p class="text-[13px] text-red-800 text-left font-medium">Comunícate con el Administrador para que
+                    reactive tu estado (TRUE) en la hoja de control y luego intenta tu PIN de nuevo.</p>
+            </div>
+
+            <button onclick="showKeypadUI()"
+                class="w-full bg-gray-900 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform flex justify-center items-center">
+                <i class="fa-solid fa-rotate-right mr-2"></i> Reintentar PIN Verificado
+            </button>
+        </div>
+    </div>
+
     <!-- MURO DE PERMISOS (FORZAR NOTIFICACIONES) -->
     <div id="permissions-modal"
         class="fixed inset-0 bg-black/80 z-[99995] hidden flex-col items-center justify-center backdrop-blur-md px-6 text-center">
         <div class="bg-white p-7 rounded-[32px] w-full max-w-sm text-center shadow-2xl modal-fade">
-            <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm">
+            <div
+                class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm">
                 <i class="fa-solid fa-bell text-4xl text-imade-light animate-bounce"></i>
             </div>
             <h3 class="text-xl font-black text-gray-900 mb-2 tracking-tight">Permisos Requeridos</h3>
@@ -244,32 +376,49 @@
     </div>
 
     <!-- PANTALLA DE MOTIVO S.O.S -->
-    <div id="sos-reason-modal" class="fixed inset-0 bg-black/90 z-[99990] hidden flex-col items-center justify-center backdrop-blur-md px-4 text-center modal-fade">
+    <div id="sos-reason-modal"
+        class="fixed inset-0 bg-black/90 z-[99990] hidden flex-col items-center justify-center backdrop-blur-md px-4 text-center modal-fade">
         <h2 class="text-2xl font-black text-white mb-6 tracking-tight">¿Cuál es la emergencia?</h2>
         <div class="grid grid-cols-2 gap-3 w-full max-w-xs">
-            <button onclick="startSOSCountdown('Choque / Accidente')" class="bg-red-500 text-white p-4 rounded-2xl font-bold text-sm shadow-lg active:scale-95 transition-transform"><i class="fa-solid fa-car-burst block text-3xl mb-2"></i> Choque</button>
-            <button onclick="startSOSCountdown('Falla Mecánica')" class="bg-orange-500 text-white p-4 rounded-2xl font-bold text-sm shadow-lg active:scale-95 transition-transform"><i class="fa-solid fa-wrench block text-3xl mb-2"></i> Mecánica</button>
-            <button onclick="startSOSCountdown('Sin Combustible')" class="bg-yellow-500 text-white p-4 rounded-2xl font-bold text-sm shadow-lg active:scale-95 transition-transform"><i class="fa-solid fa-gas-pump block text-3xl mb-2"></i> Gasolina</button>
-            <button onclick="startSOSCountdown('Asalto / Robo')" class="bg-gray-700 text-white p-4 rounded-2xl font-bold text-sm shadow-lg active:scale-95 transition-transform border border-gray-600"><i class="fa-solid fa-gun block text-3xl mb-2"></i> Asalto</button>
-            <button onclick="startSOSCountdown('Emergencia Médica')" class="bg-blue-500 text-white p-4 rounded-2xl font-bold text-sm shadow-lg active:scale-95 transition-transform col-span-2"><i class="fa-solid fa-heart-pulse block text-3xl mb-2"></i> Emergencia Médica</button>
+            <button onclick="startSOSCountdown('Choque / Accidente')"
+                class="bg-red-500 text-white p-4 rounded-2xl font-bold text-sm shadow-lg active:scale-95 transition-transform"><i
+                    class="fa-solid fa-car-burst block text-3xl mb-2"></i> Choque</button>
+            <button onclick="startSOSCountdown('Falla Mecánica')"
+                class="bg-orange-500 text-white p-4 rounded-2xl font-bold text-sm shadow-lg active:scale-95 transition-transform"><i
+                    class="fa-solid fa-wrench block text-3xl mb-2"></i> Mecánica</button>
+            <button onclick="startSOSCountdown('Sin Combustible')"
+                class="bg-yellow-500 text-white p-4 rounded-2xl font-bold text-sm shadow-lg active:scale-95 transition-transform"><i
+                    class="fa-solid fa-gas-pump block text-3xl mb-2"></i> Gasolina</button>
+            <button onclick="startSOSCountdown('Asalto / Robo')"
+                class="bg-gray-700 text-white p-4 rounded-2xl font-bold text-sm shadow-lg active:scale-95 transition-transform border border-gray-600"><i
+                    class="fa-solid fa-gun block text-3xl mb-2"></i> Asalto</button>
+            <button onclick="startSOSCountdown('Emergencia Médica')"
+                class="bg-blue-500 text-white p-4 rounded-2xl font-bold text-sm shadow-lg active:scale-95 transition-transform col-span-2"><i
+                    class="fa-solid fa-heart-pulse block text-3xl mb-2"></i> Emergencia Médica</button>
         </div>
-        <button onclick="closeSOSReason()" class="mt-8 text-gray-400 underline p-2 font-medium hover:text-white transition-colors">Cancelar</button>
+        <button onclick="closeSOSReason()"
+            class="mt-8 text-gray-400 underline p-2 font-medium hover:text-white transition-colors">Cancelar</button>
     </div>
 
     <!-- PANTALLA DE S.O.S ACTIVO / CUENTA REGRESIVA -->
-    <div id="sos-active-modal" class="fixed inset-0 bg-red-900/95 z-[99990] hidden flex-col items-center justify-center backdrop-blur-md px-6 text-center">
-        <div class="w-24 h-24 bg-red-500 rounded-full flex items-center justify-center mb-5 animate-pulse shadow-[0_0_40px_rgba(239,68,68,0.6)]">
+    <div id="sos-active-modal"
+        class="fixed inset-0 bg-red-900/95 z-[99990] hidden flex-col items-center justify-center backdrop-blur-md px-6 text-center">
+        <div
+            class="w-24 h-24 bg-red-500 rounded-full flex items-center justify-center mb-5 animate-pulse shadow-[0_0_40px_rgba(239,68,68,0.6)]">
             <i class="fa-solid fa-triangle-exclamation text-5xl text-white"></i>
         </div>
         <h2 id="sos-active-title" class="text-2xl font-black text-white mb-2 tracking-tight">ENVIANDO S.O.S...</h2>
-        <p id="sos-active-desc" class="text-red-200 text-sm font-medium mb-6 whitespace-pre-line leading-relaxed">Motivo\nCancelando en...</p>
+        <p id="sos-active-desc" class="text-red-200 text-sm font-medium mb-6 whitespace-pre-line leading-relaxed">
+            Motivo\nCancelando en...</p>
 
         <div class="text-6xl font-black text-white mb-8 drop-shadow-lg font-mono" id="sos-timer">5</div>
 
-        <button id="btn-cancel-sos" onclick="cancelSOS()" class="w-full max-w-xs bg-white text-gray-800 font-black py-4 rounded-full shadow-2xl active:scale-95 transition-transform text-lg border border-gray-200">
+        <button id="btn-cancel-sos" onclick="cancelSOS()"
+            class="w-full max-w-xs bg-white text-gray-800 font-black py-4 rounded-full shadow-2xl active:scale-95 transition-transform text-lg border border-gray-200">
             Cancelar Alerta
         </button>
-        <button id="btn-end-sos" onclick="endSOS()" class="hidden w-full max-w-xs bg-green-500 text-white font-black py-4 rounded-full shadow-2xl active:scale-95 transition-transform text-lg border border-green-400 mt-2">
+        <button id="btn-end-sos" onclick="endSOS()"
+            class="hidden w-full max-w-xs bg-green-500 text-white font-black py-4 rounded-full shadow-2xl active:scale-95 transition-transform text-lg border border-green-400 mt-2">
             Ya estoy a salvo (Terminar)
         </button>
     </div>
@@ -281,15 +430,18 @@
             class="absolute top-8 right-6 w-12 h-12 bg-black/20 rounded-full text-white flex items-center justify-center hover:bg-black/40 transition-colors active:scale-90">
             <i class="fa-solid fa-xmark text-2xl"></i>
         </button>
-        <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 animate-pulse text-red-600 shadow-xl relative">
+        <div
+            class="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 animate-pulse text-red-600 shadow-xl relative">
             <div class="absolute inset-0 border-4 border-white rounded-full animate-ping opacity-50"></div>
             <i class="fa-solid fa-triangle-exclamation text-5xl"></i>
         </div>
         <h2 class="text-3xl font-black text-white mb-3 tracking-tight drop-shadow-md">¡ALERTA S.O.S!</h2>
-        <p id="sos-receive-text" class="text-red-100 text-base font-medium leading-relaxed max-w-xs mx-auto drop-shadow-sm">
+        <p id="sos-receive-text"
+            class="text-red-100 text-base font-medium leading-relaxed max-w-xs mx-auto drop-shadow-sm">
             Un compañero necesita ayuda.
         </p>
-        <p class="text-white/60 text-xs mt-6"><i class="fa-solid fa-volume-high mr-1"></i> La alarma y vibración continúan</p>
+        <p class="text-white/60 text-xs mt-6"><i class="fa-solid fa-volume-high mr-1"></i> La alarma y vibración
+            continúan</p>
     </div>
 
     <!-- Firebase Real-time Integration -->
@@ -346,7 +498,7 @@
                     window.currentUser = user;
                     window.startPilotsListener();
                     if (window.userLat && window.userLng) {
-                        if (document.getElementById('sos-active-modal').classList.contains('hidden')) {
+                        if (document.getElementById('sos-active-modal').classList.contains('hidden') && localStorage.getItem('imade_app_pin')) {
                             window.updatePilotLocation(window.userLat, window.userLng, 'activo');
                         }
                     }
@@ -359,7 +511,7 @@
                     const pilotRef = doc(window.firebaseDb, 'artifacts', window.firebaseAppId, 'public', 'data', 'pilotos', window.currentUser.uid);
                     await setDoc(pilotRef, {
                         lat, lng, status,
-                        name: localStorage.getItem('imade_pilot_name') || "Piloto Anónimo",
+                        name: localStorage.getItem('imade_pilot_name') || "Piloto Autorizado",
                         speed: window.userSpeed || 0,
                         distance: window.totalDistance || 0,
                         timestamp: Date.now()
@@ -391,11 +543,11 @@
                         const data = doc.data();
                         if (now - data.timestamp < 3600000) {
                             pilots.push({ ...data, id: doc.id });
-                            
+
                             // SI HAY UN SOS, que suene la alarma globalmente
                             if (data.status === 'SOS') {
                                 anySOS = true;
-                                
+
                                 // Recopilamos a los que necesitan ayuda para mostrar el banner (sólo si no somos nosotros)
                                 if (doc.id !== window.currentUser.uid) {
                                     activeSosPilots.push({ ...data, id: doc.id });
@@ -442,7 +594,7 @@
                             badge: "app.png",
                             vibrate: [500, 250, 500, 250, 1000, 250, 500, 250, 500],
                             requireInteraction: true,
-                            tag: 'sos-alert', 
+                            tag: 'sos-alert',
                             renotify: true
                         };
 
@@ -472,7 +624,7 @@
             }
 
             window.addEventListener("beforeunload", () => {
-                if (window.updatePilotLocation && window.userLat && window.userLng) {
+                if (window.updatePilotLocation && window.userLat && window.userLng && localStorage.getItem('imade_app_pin')) {
                     window.updatePilotLocation(window.userLat, window.userLng, 'inactivo');
                 }
             });
@@ -495,14 +647,17 @@
     <div id="app" class="w-full max-w-md bg-imade-bg h-full relative shadow-2xl overflow-hidden flex flex-col pt-safe">
 
         <!-- HEADER -->
-        <header class="bg-white/90 backdrop-blur-md px-5 py-4 flex justify-between items-center z-20 shrink-0 border-b border-gray-100/50 relative">
+        <header
+            class="bg-white/90 backdrop-blur-md px-5 py-4 flex justify-between items-center z-20 shrink-0 border-b border-gray-100/50 relative">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-imade-dark to-blue-800 rounded-xl flex items-center justify-center text-white shadow-sm">
+                <div
+                    class="w-10 h-10 bg-gradient-to-br from-imade-dark to-blue-800 rounded-xl flex items-center justify-center text-white shadow-sm">
                     <i class="fa-solid fa-map-location-dot text-lg"></i>
                 </div>
                 <div>
                     <h1 class="text-lg font-extrabold text-imade-dark leading-tight tracking-tight">Rutas CEDIS</h1>
-                    <p class="text-[11px] text-imade-light font-bold uppercase tracking-wider">Grupo Imade</p>
+                    <p class="text-[11px] text-imade-light font-bold uppercase tracking-wider" id="header-pilot-name">
+                        Grupo Imade</p>
                 </div>
             </div>
             <button id="btn-sync" onclick="syncData()"
@@ -518,48 +673,60 @@
             <!-- PANTALLA 1: INICIO -->
             <div id="screen-home" class="screen w-full h-full flex flex-col px-5 py-3 overflow-hidden">
                 <div class="flex flex-col items-center justify-center mt-4 mb-6">
-                    <img src="logo.png" alt="Grupo Imade" class="h-16 object-contain mb-3 filter drop-shadow-sm" onerror="this.style.display='none'">
-                    <h2 class="text-2xl font-black text-imade-dark text-center tracking-tight">¡Bienvenido!</h2>
+                    <img src="logo.png" alt="Grupo Imade" class="h-16 object-contain mb-3 filter drop-shadow-sm"
+                        onerror="this.style.display='none'">
+                    <h2 id="welcome-msg" class="text-2xl font-black text-imade-dark text-center tracking-tight">
+                        ¡Bienvenido!</h2>
                 </div>
 
                 <!-- Tarjetas de Acción Rápida -->
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div onclick="switchTab('search')"
                         class="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-transform hover:shadow-md">
-                        <div class="w-10 h-10 bg-blue-50 text-imade-light rounded-2xl flex items-center justify-center mb-2">
+                        <div
+                            class="w-10 h-10 bg-blue-50 text-imade-light rounded-2xl flex items-center justify-center mb-2">
                             <i class="fa-solid fa-users text-lg"></i>
                         </div>
-                        <h3 class="font-bold text-gray-800 text-sm">Buscar<br><span class="text-gray-500 font-medium text-[11px]">Cliente</span></h3>
+                        <h3 class="font-bold text-gray-800 text-sm">Buscar<br><span
+                                class="text-gray-500 font-medium text-[11px]">Cliente</span></h3>
                     </div>
 
                     <div onclick="switchTab('register')"
                         class="bg-gradient-to-br from-imade-dark to-blue-900 p-4 rounded-3xl shadow-md flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-transform relative overflow-hidden">
                         <div class="absolute -right-4 -top-4 w-16 h-16 bg-white opacity-5 rounded-full blur-xl"></div>
-                        <div class="w-10 h-10 bg-white/10 text-white rounded-2xl flex items-center justify-center mb-2 backdrop-blur-sm border border-white/10">
+                        <div
+                            class="w-10 h-10 bg-white/10 text-white rounded-2xl flex items-center justify-center mb-2 backdrop-blur-sm border border-white/10">
                             <i class="fa-solid fa-location-crosshairs text-lg"></i>
                         </div>
-                        <h3 class="font-bold text-white text-sm">Nuevo<br><span class="text-blue-200 font-medium text-[11px]">Registro</span></h3>
+                        <h3 class="font-bold text-white text-sm">Nuevo<br><span
+                                class="text-blue-200 font-medium text-[11px]">Registro</span></h3>
                     </div>
                 </div>
 
                 <!-- Estados Divididos: GPS y Piloto -->
                 <div class="grid grid-cols-2 gap-3 mb-4">
-                    <div class="bg-white rounded-3xl p-3 shadow-sm border border-gray-100 flex flex-col justify-center items-center text-center gap-1.5 transition-colors">
-                        <div id="home-gps-icon" class="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 transition-colors">
+                    <div
+                        class="bg-white rounded-3xl p-3 shadow-sm border border-gray-100 flex flex-col justify-center items-center text-center gap-1.5 transition-colors">
+                        <div id="home-gps-icon"
+                            class="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 transition-colors">
                             <i class="fa-solid fa-satellite-dish text-sm animate-pulse"></i>
                         </div>
                         <div>
                             <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Satelital</p>
-                            <p id="home-gps-status" class="text-[11px] font-bold text-gray-600 leading-tight">Buscando...</p>
+                            <p id="home-gps-status" class="text-[11px] font-bold text-gray-600 leading-tight">
+                                Buscando...</p>
                         </div>
                     </div>
-                    <div class="bg-white rounded-3xl p-3 shadow-sm border border-gray-100 flex flex-col justify-center items-center text-center gap-1.5 transition-colors">
-                        <div id="home-pilot-icon" class="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 transition-colors">
+                    <div
+                        class="bg-white rounded-3xl p-3 shadow-sm border border-gray-100 flex flex-col justify-center items-center text-center gap-1.5 transition-colors">
+                        <div id="home-pilot-icon"
+                            class="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 transition-colors">
                             <i class="fa-solid fa-user-astronaut text-sm"></i>
                         </div>
                         <div>
                             <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Tu Estado</p>
-                            <p id="home-pilot-status" class="text-[11px] font-bold text-gray-600 leading-tight">Inactivo</p>
+                            <p id="home-pilot-status" class="text-[11px] font-bold text-gray-600 leading-tight">Inactivo
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -567,17 +734,21 @@
                 <!-- BOTÓN S.O.S -->
                 <button onclick="triggerSOS()"
                     class="w-full bg-red-500 text-white font-black py-3.5 rounded-3xl shadow-xl shadow-red-500/30 hover:bg-red-600 transition-all active:scale-95 flex justify-center items-center border border-red-400 overflow-hidden relative group">
-                    <div class="absolute inset-0 bg-white/20 w-full h-full transform -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                    <div
+                        class="absolute inset-0 bg-white/20 w-full h-full transform -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]">
+                    </div>
                     <i class="fa-solid fa-triangle-exclamation mr-2 text-xl animate-pulse"></i> EMITIR ALERTA S.O.S
                 </button>
 
                 <!-- Footer IT -->
                 <div class="mt-auto pt-4 text-center pb-2">
-                    <div class="inline-flex items-center justify-center space-x-2 text-[10px] text-gray-400 font-medium bg-white border border-gray-100/50 px-3 py-1.5 rounded-full shadow-sm mb-1.5">
+                    <div
+                        class="inline-flex items-center justify-center space-x-2 text-[10px] text-gray-400 font-medium bg-white border border-gray-100/50 px-3 py-1.5 rounded-full shadow-sm mb-1.5">
                         <i class="fa-solid fa-laptop-code text-imade-light"></i>
                         <span>Creado por <strong>Depto. de IT</strong></span>
                     </div>
-                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest" id="app-version-text">Versión 1.8.3</p>
+                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest" id="app-version-text">
+                        Versión 1.8.3</p>
                 </div>
             </div>
 
@@ -586,7 +757,8 @@
                 <div class="p-5 bg-white/95 backdrop-blur-md shadow-sm shrink-0 z-10 relative border-b border-gray-100">
                     <h2 class="text-2xl font-black text-imade-dark mb-4 tracking-tight">Directorio</h2>
                     <div class="relative">
-                        <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg"></i>
+                        <i
+                            class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg"></i>
                         <input type="text" id="search-input" onkeyup="filterClients()"
                             placeholder="Buscar nombre o código..."
                             class="w-full pl-11 pr-10 py-3.5 bg-gray-100 rounded-2xl border-transparent focus:bg-white focus:border-imade-light focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm font-semibold shadow-inner">
@@ -613,61 +785,89 @@
             <!-- PANTALLA 3: DETALLE DEL CLIENTE Y MAPA ESTÁTICO -->
             <div id="screen-client-detail" class="screen hidden absolute inset-0 flex flex-col z-[100] bg-gray-50">
                 <!-- Header -->
-                <div class="p-5 bg-white shadow-sm shrink-0 z-10 border-b border-gray-100 flex items-center justify-between">
-                    <button onclick="closeClientDetail()" class="w-10 h-10 rounded-full bg-gray-50 text-imade-dark hover:bg-gray-200 flex items-center justify-center transition-transform active:scale-90 border border-gray-100">
+                <div
+                    class="p-5 bg-white shadow-sm shrink-0 z-10 border-b border-gray-100 flex items-center justify-between">
+                    <button onclick="closeClientDetail()"
+                        class="w-10 h-10 rounded-full bg-gray-50 text-imade-dark hover:bg-gray-200 flex items-center justify-center transition-transform active:scale-90 border border-gray-100">
                         <i class="fa-solid fa-arrow-left text-lg"></i>
                     </button>
-                    <h2 class="text-xl font-black text-imade-dark tracking-tight flex-1 text-center pr-10">Detalle de Cliente</h2>
+                    <h2 class="text-xl font-black text-imade-dark tracking-tight flex-1 text-center pr-10">Detalle de
+                        Cliente</h2>
                 </div>
 
                 <!-- Scrollable Content -->
                 <div class="flex-1 overflow-y-auto p-5 no-scrollbar pb-10 space-y-5">
                     <!-- Header Info -->
                     <div class="flex justify-between items-start mb-2">
-                        <h3 id="detail-client-name" class="text-2xl font-black text-gray-900 leading-tight pr-4 tracking-tight">Nombre Cliente</h3>
-                        <span id="detail-client-distance" class="bg-blue-50 text-imade-light text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap border border-blue-100 shadow-sm hidden">-- km</span>
+                        <h3 id="detail-client-name"
+                            class="text-2xl font-black text-gray-900 leading-tight pr-4 tracking-tight">Nombre Cliente
+                        </h3>
+                        <span id="detail-client-distance"
+                            class="bg-blue-50 text-imade-light text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap border border-blue-100 shadow-sm hidden">--
+                            km</span>
                     </div>
 
                     <!-- Info Card -->
                     <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 space-y-4">
                         <div class="flex items-center">
-                            <span class="font-bold text-gray-400 text-[10px] uppercase tracking-wider w-20 shrink-0">Código:</span>
-                            <span class="font-black text-imade-dark bg-blue-50 px-2 py-0.5 rounded shadow-sm border border-blue-100 text-[12px]" id="detail-client-code"># --</span>
+                            <span
+                                class="font-bold text-gray-400 text-[10px] uppercase tracking-wider w-20 shrink-0">Código:</span>
+                            <span
+                                class="font-black text-imade-dark bg-blue-50 px-2 py-0.5 rounded shadow-sm border border-blue-100 text-[12px]"
+                                id="detail-client-code"># --</span>
                         </div>
                         <div class="flex items-start">
-                            <span class="font-bold text-gray-400 text-[10px] uppercase tracking-wider w-20 shrink-0 mt-0.5">Dirección:</span>
-                            <span class="text-gray-700 text-sm font-medium leading-tight" id="detail-client-address">--</span>
+                            <span
+                                class="font-bold text-gray-400 text-[10px] uppercase tracking-wider w-20 shrink-0 mt-0.5">Dirección:</span>
+                            <span class="text-gray-700 text-sm font-medium leading-tight"
+                                id="detail-client-address">--</span>
                         </div>
                         <div class="flex items-start">
-                            <span class="font-bold text-gray-400 text-[10px] uppercase tracking-wider w-20 shrink-0 mt-0.5">Municipio:</span>
-                            <span class="text-gray-700 text-sm font-medium leading-tight" id="detail-client-muni">--</span>
+                            <span
+                                class="font-bold text-gray-400 text-[10px] uppercase tracking-wider w-20 shrink-0 mt-0.5">Municipio:</span>
+                            <span class="text-gray-700 text-sm font-medium leading-tight"
+                                id="detail-client-muni">--</span>
                         </div>
                         <div class="flex items-start">
-                            <span class="font-bold text-gray-400 text-[10px] uppercase tracking-wider w-20 shrink-0 mt-0.5">Depto:</span>
-                            <span class="text-gray-700 text-sm font-medium leading-tight" id="detail-client-depto">--</span>
+                            <span
+                                class="font-bold text-gray-400 text-[10px] uppercase tracking-wider w-20 shrink-0 mt-0.5">Depto:</span>
+                            <span class="text-gray-700 text-sm font-medium leading-tight"
+                                id="detail-client-depto">--</span>
                         </div>
-                        <div class="flex items-center pt-3 border-t border-gray-100 hidden" id="detail-client-phone-container">
-                            <span class="font-bold text-gray-400 text-[10px] uppercase tracking-wider w-20 shrink-0">Teléfono:</span>
+                        <div class="flex items-center pt-3 border-t border-gray-100 hidden"
+                            id="detail-client-phone-container">
+                            <span
+                                class="font-bold text-gray-400 text-[10px] uppercase tracking-wider w-20 shrink-0">Teléfono:</span>
                             <i class="fa-solid fa-phone mr-1.5 text-green-500 text-xs"></i>
-                            <a href="#" id="detail-client-phone-link" class="text-blue-600 underline underline-offset-2 font-bold tracking-wide text-sm">--</a>
+                            <a href="#" id="detail-client-phone-link"
+                                class="text-blue-600 underline underline-offset-2 font-bold tracking-wide text-sm">--</a>
                         </div>
                         <div class="flex items-center pt-2 mt-1">
-                            <span class="font-bold text-gray-400 text-[10px] uppercase tracking-wider w-20 shrink-0">GPS:</span>
+                            <span
+                                class="font-bold text-gray-400 text-[10px] uppercase tracking-wider w-20 shrink-0">GPS:</span>
                             <i class="fa-solid fa-map-pin mr-1.5 text-gray-400 text-xs"></i>
-                            <span class="text-gray-500 text-[10px] font-medium opacity-80" id="detail-client-coords">Lat: 0, Lng: 0</span>
+                            <span class="text-gray-500 text-[10px] font-medium opacity-80"
+                                id="detail-client-coords">Lat: 0, Lng: 0</span>
                         </div>
                     </div>
 
                     <!-- Ubicación en Mapa ESTRICTAMENTE INMÓVIL -->
                     <div class="space-y-3 mt-2 pointer-events-none">
-                        <h4 class="font-black text-gray-800 text-sm ml-1"><i class="fa-solid fa-location-dot text-imade-light mr-1.5"></i>Ubicación Exacta</h4>
-                        <div id="detail-map" class="w-full h-48 rounded-3xl shadow-sm border border-gray-200 z-10 overflow-hidden relative"></div>
+                        <h4 class="font-black text-gray-800 text-sm ml-1"><i
+                                class="fa-solid fa-location-dot text-imade-light mr-1.5"></i>Ubicación Exacta</h4>
+                        <div id="detail-map"
+                            class="w-full h-48 rounded-3xl shadow-sm border border-gray-200 z-10 overflow-hidden relative">
+                        </div>
                     </div>
 
                     <!-- Botones de Navegación -->
                     <div class="grid grid-cols-2 gap-3 pt-2">
-                        <button onclick="openWaze()" class="bg-[#33ccff] text-white font-black py-4 px-4 rounded-2xl shadow-lg shadow-[#33ccff]/30 hover:bg-[#00bfff] flex justify-center items-center transition-transform active:scale-95"><i class="fa-brands fa-waze text-2xl mr-2"></i> Waze</button>
-                        <button onclick="openGoogleMaps()" class="bg-gray-100 text-gray-800 font-black py-4 px-4 rounded-2xl shadow-sm hover:bg-gray-200 flex justify-center items-center transition-transform active:scale-95 border border-gray-200"><i class="fa-solid fa-map-location-dot text-xl mr-2 text-[#34a853]"></i> Maps</button>
+                        <button onclick="openWaze()"
+                            class="bg-[#33ccff] text-white font-black py-4 px-4 rounded-2xl shadow-lg shadow-[#33ccff]/30 hover:bg-[#00bfff] flex justify-center items-center transition-transform active:scale-95"><i
+                                class="fa-brands fa-waze text-2xl mr-2"></i> Waze</button>
+                        <button onclick="openGoogleMaps()"
+                            class="bg-gray-100 text-gray-800 font-black py-4 px-4 rounded-2xl shadow-sm hover:bg-gray-200 flex justify-center items-center transition-transform active:scale-95 border border-gray-200"><i
+                                class="fa-solid fa-map-location-dot text-xl mr-2 text-[#34a853]"></i> Maps</button>
                     </div>
                 </div>
             </div>
@@ -683,21 +883,56 @@
                         class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-6">
                         <div id="location-status"
                             class="p-4 bg-gray-50 rounded-2xl flex items-center border border-gray-200 transition-colors">
-                            <div class="mr-3 text-gray-400"><i class="fa-solid fa-location-crosshairs animate-pulse text-xl"></i></div>
+                            <div class="mr-3 text-gray-400"><i
+                                    class="fa-solid fa-location-crosshairs animate-pulse text-xl"></i></div>
                             <div>
                                 <h4 class="text-sm font-bold text-gray-700">Esperando señal GPS</h4>
                                 <p class="text-xs text-gray-500 font-medium">Buscando...</p>
                             </div>
                         </div>
                         <div class="space-y-4">
-                            <div><label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Piloto (Automático)</label><input type="text" id="reg-pilot" disabled class="w-full px-4 py-4 bg-gray-100 rounded-2xl border border-transparent text-sm font-bold text-gray-500 shadow-inner"></div>
-                            <div><label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Nombre de Cliente</label><input type="text" id="reg-name" required placeholder="Ej. Distribuidora Central" class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800"></div>
-                            <div><label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Código de Cliente</label><input type="text" id="reg-code" required placeholder="Ej. 1234" class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800"></div>
-                            <div><label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Teléfono</label><input type="tel" id="reg-phone" required placeholder="Ej. 5555-5555" class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800"></div>
-                            <div><label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Departamento</label><input type="text" id="reg-depto" required placeholder="Ej. Guatemala" class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800"></div>
-                            <div><label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Municipio</label><input type="text" id="reg-muni" required placeholder="Ej. Mixco" class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800"></div>
-                            <div><label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Dirección Exacta</label><textarea id="reg-address" required rows="2" placeholder="Ej. 4ta Calle 2-33 Zona 1..." class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm resize-none font-bold text-gray-800"></textarea></div>
-                            <div><label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">País</label><input type="text" id="reg-pais" value="Guatemala" required class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800 shadow-inner"></div>
+                            <div><label
+                                    class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Piloto
+                                    (Automático)</label><input type="text" id="reg-pilot" disabled
+                                    class="w-full px-4 py-4 bg-gray-100 rounded-2xl border border-transparent text-sm font-bold text-gray-500 shadow-inner">
+                            </div>
+                            <div><label
+                                    class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Nombre
+                                    de Cliente</label><input type="text" id="reg-name" required
+                                    placeholder="Ej. Distribuidora Central"
+                                    class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800">
+                            </div>
+                            <div><label
+                                    class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Código
+                                    de Cliente</label><input type="text" id="reg-code" required placeholder="Ej. 1234"
+                                    class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800">
+                            </div>
+                            <div><label
+                                    class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Teléfono</label><input
+                                    type="tel" id="reg-phone" required placeholder="Ej. 5555-5555"
+                                    class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800">
+                            </div>
+                            <div><label
+                                    class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Departamento</label><input
+                                    type="text" id="reg-depto" required placeholder="Ej. Guatemala"
+                                    class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800">
+                            </div>
+                            <div><label
+                                    class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Municipio</label><input
+                                    type="text" id="reg-muni" required placeholder="Ej. Mixco"
+                                    class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800">
+                            </div>
+                            <div><label
+                                    class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Dirección
+                                    Exacta</label><textarea id="reg-address" required rows="2"
+                                    placeholder="Ej. 4ta Calle 2-33 Zona 1..."
+                                    class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm resize-none font-bold text-gray-800"></textarea>
+                            </div>
+                            <div><label
+                                    class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">País</label><input
+                                    type="text" id="reg-pais" value="Guatemala" required
+                                    class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800 shadow-inner">
+                            </div>
                         </div>
                         <div class="pt-2"><button type="submit" id="btn-save"
                                 class="w-full bg-imade-dark text-white font-black py-4 rounded-2xl shadow-xl shadow-imade-dark/30 hover:bg-blue-900 transition-all active:scale-95 disabled:opacity-50 flex justify-center items-center"><i
@@ -708,13 +943,16 @@
 
             <!-- PANTALLA 5: MAPA DE PILOTOS EN VIVO -->
             <div id="screen-pilots" class="screen hidden absolute inset-0 flex flex-col z-[90] bg-gray-200">
-                <div class="p-5 bg-white/95 backdrop-blur-md shadow-sm shrink-0 z-10 relative border-b border-gray-100 flex justify-between items-center">
+                <div
+                    class="p-5 bg-white/95 backdrop-blur-md shadow-sm shrink-0 z-10 relative border-b border-gray-100 flex justify-between items-center">
                     <div>
                         <h2 class="text-2xl font-black text-imade-dark tracking-tight">Flota en Vivo</h2>
                         <p class="text-xs text-gray-500 font-medium">Monitoreo satelital simultáneo</p>
                     </div>
-                    <div class="w-10 h-10 bg-blue-50 text-imade-light rounded-full flex items-center justify-center shadow-inner relative">
-                        <div class="absolute inset-0 border-2 border-imade-light rounded-full animate-ping opacity-50"></div>
+                    <div
+                        class="w-10 h-10 bg-blue-50 text-imade-light rounded-full flex items-center justify-center shadow-inner relative">
+                        <div class="absolute inset-0 border-2 border-imade-light rounded-full animate-ping opacity-50">
+                        </div>
                         <i class="fa-solid fa-satellite text-lg"></i>
                     </div>
                 </div>
@@ -751,36 +989,21 @@
                 class="nav-btn flex-1 py-3 flex flex-col items-center gap-1 text-gray-400 hover:text-imade-dark transition-colors relative">
                 <i class="fa-solid fa-truck-fast text-xl mb-0.5 relative">
                     <span class="absolute -top-1 -right-2 flex h-3 w-3">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-imade-light opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-3 w-3 bg-imade-light border border-white"></span>
+                        <span
+                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-imade-light opacity-75"></span>
+                        <span
+                            class="relative inline-flex rounded-full h-3 w-3 bg-imade-light border border-white"></span>
                     </span>
                 </i>
                 <span class="text-[10px] font-extrabold uppercase text-imade-light">Flota</span>
             </button>
         </nav>
 
-        <!-- Identidad del Piloto Modal -->
-        <div id="name-modal"
-            class="fixed inset-0 bg-black/60 z-[3000] hidden flex items-center justify-center backdrop-blur-md px-4 transition-opacity">
-            <div class="bg-white p-7 rounded-[32px] w-full max-w-sm text-center shadow-2xl modal-fade">
-                <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm">
-                    <i class="fa-solid fa-id-badge text-4xl text-imade-light"></i>
-                </div>
-                <h3 class="text-xl font-black text-gray-900 mb-1 tracking-tight">Identificación</h3>
-                <p class="text-gray-500 text-sm mb-5 font-medium">Ingresa tu nombre para aparecer en el radar de la flota en tiempo real.</p>
-                <input type="text" id="pilot-name-input" placeholder="Ej. Juan Pérez"
-                    class="w-full px-4 py-4 bg-gray-50 rounded-2xl border border-gray-200 focus:bg-white focus:border-imade-light focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-bold text-gray-800 text-center mb-4">
-                <button onclick="savePilotName()"
-                    class="w-full bg-imade-dark text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform">
-                    Comenzar Turno
-                </button>
-            </div>
-        </div>
-
         <!-- iOS Style Toast -->
         <div id="toast"
             class="absolute top-4 left-4 right-4 sm:left-1/2 sm:w-96 sm:-translate-x-1/2 ios-toast rounded-[24px] p-4 flex items-center gap-3 transition-all duration-400 opacity-0 -translate-y-[150%] pointer-events-none z-[9999]">
-            <div id="toast-icon" class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center shrink-0 border border-gray-200">
+            <div id="toast-icon"
+                class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center shrink-0 border border-gray-200">
                 <i class="fa-solid fa-bell text-imade-light text-lg"></i>
             </div>
             <div class="flex-1">
@@ -793,15 +1016,20 @@
         <div id="gps-modal"
             class="fixed inset-0 bg-black/60 z-[2000] hidden flex items-center justify-center backdrop-blur-sm px-4 transition-opacity">
             <div class="bg-white p-7 rounded-[32px] w-full max-w-sm text-center shadow-2xl modal-fade">
-                <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5 border-4 border-white shadow-sm relative">
+                <div
+                    class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5 border-4 border-white shadow-sm relative">
                     <i class="fa-solid fa-location-crosshairs text-3xl text-red-500"></i>
                     <div class="absolute -right-1 -bottom-1 bg-white rounded-full p-1">
-                        <div class="bg-red-500 rounded-full w-5 h-5 flex items-center justify-center"><i class="fa-solid fa-xmark text-white text-xs font-bold"></i></div>
+                        <div class="bg-red-500 rounded-full w-5 h-5 flex items-center justify-center"><i
+                                class="fa-solid fa-xmark text-white text-xs font-bold"></i></div>
                     </div>
                 </div>
                 <h3 class="text-xl font-black text-gray-900 mb-2 tracking-tight">Ubicación Apagada</h3>
-                <p class="text-gray-500 text-sm mb-6 leading-relaxed font-medium">Para que la app funcione, necesitas <strong>encender tu GPS</strong> y otorgar permisos.</p>
-                <button onclick="closeGpsModal()" class="w-full bg-gray-900 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-transform">Entendido</button>
+                <p class="text-gray-500 text-sm mb-6 leading-relaxed font-medium">Para que la app funcione, necesitas
+                    <strong>encender tu GPS</strong> y otorgar permisos.
+                </p>
+                <button onclick="closeGpsModal()"
+                    class="w-full bg-gray-900 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-transform">Entendido</button>
             </div>
         </div>
 
@@ -860,13 +1088,13 @@
             btnBypass.addEventListener('click', () => {
                 document.getElementById('install-screen').classList.add('hidden');
                 document.getElementById('app').classList.remove('hidden');
-                
+
                 setTimeout(() => {
                     if (detailMap) detailMap.invalidateSize();
                     if (pilotsMap) pilotsMap.invalidateSize();
                 }, 300);
-                
-                checkPermissions();
+
+                initAuthFlow(); // Iniciar flujo de seguridad
             });
 
             window.addEventListener('appinstalled', () => {
@@ -889,12 +1117,167 @@
                         }); 
                     `;
                     const blob = new Blob([swCode], { type: 'application/javascript' });
-                    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
-                } catch(e) {}
+                    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => { });
+                } catch (e) { }
             });
         }
 
         const GOOGLE_APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbytG7P5FCmNbk29m-wP4dnL3r_xPbkZJTEMBL_nH5-ByeSNrQ5TWm95fayZp6Cn7w4/exec";
+
+        // ==========================================================
+        // LÓGICA DE PIN, BLOQUEO Y ESTADOS DE SEGURIDAD
+        // ==========================================================
+        let currentPinInput = "";
+        let failedAttempts = parseInt(localStorage.getItem('imade_failed_attempts') || '0');
+        let isAppLocked = localStorage.getItem('imade_app_locked') === 'true';
+
+        function initAuthFlow() {
+            const savedPin = localStorage.getItem('imade_app_pin');
+            if (savedPin) {
+                // Validación silenciosa con el servidor cada vez que abren la app
+                verifyPinWithServer(savedPin, true);
+            } else {
+                showPinScreen();
+            }
+        }
+
+        function showPinScreen() {
+            document.getElementById('pin-screen').classList.remove('hidden');
+            if (isAppLocked) { showLockUI(); }
+            else { showKeypadUI(); }
+        }
+
+        function showLockUI() {
+            document.getElementById('pin-normal-ui').classList.add('hidden');
+            document.getElementById('pin-locked-ui').classList.remove('hidden');
+        }
+
+        function showKeypadUI() {
+            document.getElementById('pin-locked-ui').classList.add('hidden');
+            document.getElementById('pin-normal-ui').classList.remove('hidden');
+            currentPinInput = "";
+            updatePinDots();
+        }
+
+        function pressKey(num) {
+            if (currentPinInput.length < 6) {
+                currentPinInput += num;
+                updatePinDots();
+
+                // Efecto háptico (vibración leve si está disponible)
+                if (navigator.vibrate) navigator.vibrate(20);
+
+                if (currentPinInput.length === 6) {
+                    verifyPinWithServer(currentPinInput, false);
+                }
+            }
+        }
+
+        function deleteKey() {
+            if (currentPinInput.length > 0) {
+                currentPinInput = currentPinInput.slice(0, -1);
+                updatePinDots();
+                if (navigator.vibrate) navigator.vibrate(20);
+            }
+        }
+
+        function updatePinDots() {
+            const dots = document.querySelectorAll('.pin-dot');
+            dots.forEach((dot, index) => {
+                if (index < currentPinInput.length) {
+                    dot.classList.add('bg-imade-dark'); dot.classList.remove('bg-gray-200');
+                } else {
+                    dot.classList.remove('bg-imade-dark'); dot.classList.add('bg-gray-200');
+                }
+            });
+            hidePinError();
+        }
+
+        function showPinError(msg) {
+            const errEl = document.getElementById('pin-error-msg');
+            errEl.textContent = msg;
+            errEl.classList.remove('opacity-0');
+            // Vibrar en error
+            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        }
+        function hidePinError() { document.getElementById('pin-error-msg').classList.add('opacity-0'); }
+
+        async function verifyPinWithServer(pinToVerify, isSilent) {
+            if (!isSilent) {
+                document.getElementById('pin-keypad').classList.add('opacity-50', 'pointer-events-none');
+                document.getElementById('pin-loading').classList.remove('hidden');
+                hidePinError();
+            }
+
+            try {
+                // Al usar GET, podemos leer el JSON y sortear el problema de CORS en GAS
+                const url = GOOGLE_APP_SCRIPT_URL + "?action=verifyPin&pin=" + encodeURIComponent(pinToVerify);
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.success) {
+                    // Acceso Concedido & Usuario Activo
+                    failedAttempts = 0;
+                    localStorage.setItem('imade_failed_attempts', '0');
+                    localStorage.setItem('imade_app_locked', 'false');
+                    isAppLocked = false;
+                    localStorage.setItem('imade_app_pin', pinToVerify);
+                    localStorage.setItem('imade_pilot_name', data.user.nombre);
+
+                    // Actualizar UI
+                    document.getElementById('pin-screen').classList.add('hidden');
+                    document.getElementById('welcome-msg').textContent = "¡Bienvenido, " + data.user.nombre.split(' ')[0] + "!";
+                    document.getElementById('header-pilot-name').textContent = data.user.nombre;
+                    document.getElementById('reg-pilot').value = data.user.nombre;
+
+                    if (!isSilent) showToast("Acceso Autorizado", "Bienvenido " + data.user.nombre, "fa-shield-check", "text-green-500", "bg-green-50 border-green-200");
+
+                    // Continuar flujo PWA
+                    checkPermissions();
+                    window.requestWakeLock();
+
+                    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                    setTimeout(syncData, 1000);
+
+                    if (window.updatePilotLocation && window.userLat && window.userLng) {
+                        window.updatePilotLocation(window.userLat, window.userLng, 'activo');
+                    }
+                } else {
+                    // Rechazo
+                    if (data.reason === "blocked") {
+                        showPinError("Acceso denegado. Tu perfil está desactivado.");
+                        if (isSilent) showPinScreen();
+                    } else {
+                        // PIN No existe / Incorrecto
+                        if (isSilent) {
+                            showPinScreen();
+                        } else {
+                            failedAttempts++;
+                            localStorage.setItem('imade_failed_attempts', failedAttempts.toString());
+
+                            if (failedAttempts >= 3) {
+                                isAppLocked = true;
+                                localStorage.setItem('imade_app_locked', 'true');
+                                showLockUI(); // Bloquear totalmente la App
+                            } else {
+                                showPinError(`PIN incorrecto. Intento ${failedAttempts}/3`);
+                            }
+                        }
+                    }
+                    currentPinInput = ""; updatePinDots();
+                }
+            } catch (error) {
+                if (!isSilent) showPinError("Error de conexión. Verifica tu internet e intenta de nuevo.");
+                currentPinInput = ""; updatePinDots();
+            } finally {
+                if (!isSilent) {
+                    document.getElementById('pin-keypad').classList.remove('opacity-50', 'pointer-events-none');
+                    document.getElementById('pin-loading').classList.add('hidden');
+                }
+            }
+        }
 
         let clients = [];
         let detailMap = null;
@@ -905,7 +1288,7 @@
         window.userLng = null;
         window.lastLat = null;
         window.lastLng = null;
-        window.userSpeed = 0; 
+        window.userSpeed = 0;
         window.totalDistance = 0; // Distancia acumulada (km)
 
         let selectedClient = null;
@@ -936,6 +1319,8 @@
         function checkPermissions() {
             if ('Notification' in window && Notification.permission !== 'granted') {
                 document.getElementById('permissions-modal').classList.remove('hidden');
+            } else {
+                requestLocation();
             }
         }
 
@@ -949,7 +1334,7 @@
         let sosInterval;
         let isSosPlaying = false;
         let audioCtx = null;
-        
+
         // Sonido de sirena alarmante (Ambulancia/Policía)
         window.manageSOSAudio = function (anySOS) {
             if (anySOS && !isSosPlaying) {
@@ -979,7 +1364,7 @@
 
                         if (navigator.vibrate) { navigator.vibrate([400, 200]); }
                     } catch (e) { }
-                }, 600); 
+                }, 600);
             } else if (!anySOS && isSosPlaying) {
                 isSosPlaying = false;
                 clearInterval(sosInterval);
@@ -996,41 +1381,11 @@
 
         window.onload = () => {
             loadClients();
-            requestLocation();
-            setTimeout(syncData, 1000);
             setupSearchInput();
-            checkPilotIdentity();
+            if (isStandalone) {
+                initAuthFlow();
+            }
         };
-
-        function checkPilotIdentity() {
-            if (!localStorage.getItem('imade_pilot_name')) {
-                document.getElementById('name-modal').classList.remove('hidden');
-            } else {
-                window.requestWakeLock();
-                if (isStandalone) checkPermissions();
-            }
-        }
-
-        function savePilotName() {
-            const name = document.getElementById('pilot-name-input').value.trim();
-            if (name.length > 2) {
-                localStorage.setItem('imade_pilot_name', name);
-                document.getElementById('name-modal').classList.add('hidden');
-                showToast("¡Turno iniciado!", "Bienvenido " + name, "fa-user-check");
-
-                checkPermissions();
-                window.requestWakeLock();
-
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-
-                if (window.updatePilotLocation && window.userLat && window.userLng) {
-                    window.updatePilotLocation(window.userLat, window.userLng, 'activo');
-                }
-            } else {
-                alert("Por favor ingresa un nombre válido.");
-            }
-        }
 
         function switchTab(tabId) {
             ['home', 'search', 'register', 'client-detail', 'pilots'].forEach(id => {
@@ -1101,27 +1456,27 @@
         let mySosInterval;
         let currentSOSReason = "";
 
-        window.triggerSOS = function() {
+        window.triggerSOS = function () {
             if (!window.userLat || !window.userLng) { showToast("Error", "GPS no disponible para S.O.S", "fa-triangle-exclamation"); return; }
             document.getElementById('sos-reason-modal').classList.remove('hidden');
         }
 
-        window.closeSOSReason = function() {
+        window.closeSOSReason = function () {
             document.getElementById('sos-reason-modal').classList.add('hidden');
         }
 
-        window.startSOSCountdown = function(reason) {
+        window.startSOSCountdown = function (reason) {
             currentSOSReason = reason;
             document.getElementById('sos-reason-modal').classList.add('hidden');
             document.getElementById('sos-active-modal').classList.remove('hidden');
-            
+
             // UI Reset
             document.getElementById('sos-active-title').innerText = "ENVIANDO S.O.S...";
             document.getElementById('sos-active-desc').innerText = `Motivo: ${reason}\nCancelando en...`;
             document.getElementById('btn-cancel-sos').classList.remove('hidden');
             document.getElementById('btn-end-sos').classList.add('hidden');
             document.getElementById('sos-timer').classList.remove('hidden');
-            
+
             const targetTime = Date.now() + 5000;
             document.getElementById('sos-timer').innerText = "5";
 
@@ -1137,12 +1492,12 @@
             }, 500);
         }
 
-        window.executeSOS = function() {
+        window.executeSOS = function () {
             // UI Update
             document.getElementById('sos-timer').classList.add('hidden');
             document.getElementById('btn-cancel-sos').classList.add('hidden');
             document.getElementById('btn-end-sos').classList.remove('hidden');
-            
+
             document.getElementById('sos-active-title').innerText = "¡S.O.S ACTIVO!";
             document.getElementById('sos-active-desc').innerText = "La flota ha sido notificada y el correo de emergencia fue enviado. Toca el botón verde inferior cuando estés a salvo.";
 
@@ -1168,13 +1523,13 @@
             }).catch(e => console.error("Error enviando correo S.O.S", e));
         }
 
-        window.cancelSOS = function() {
+        window.cancelSOS = function () {
             clearInterval(mySosInterval);
             document.getElementById('sos-active-modal').classList.add('hidden');
             showToast("S.O.S Cancelado", "No se envió la alerta.", "fa-ban");
         }
 
-        window.endSOS = function() {
+        window.endSOS = function () {
             document.getElementById('sos-active-modal').classList.add('hidden');
             if (window.updatePilotLocation && window.userLat && window.userLng) {
                 window.updatePilotLocation(window.userLat, window.userLng, 'activo');
@@ -1202,10 +1557,10 @@
                     (position) => {
                         const currentLat = position.coords.latitude;
                         const currentLng = position.coords.longitude;
-                        const speedMps = position.coords.speed || 0; 
-                        
+                        const speedMps = position.coords.speed || 0;
+
                         window.userSpeed = speedMps * 3.6; // Convertir m/s a km/h
-                        
+
                         // Lógica de acumulación de Distancia (Filtra saltos de GPS menores a 20 metros)
                         if (window.lastLat && window.lastLng) {
                             const distTraveled = window.calculateDistance(window.lastLat, window.lastLng, currentLat, currentLng);
@@ -1219,7 +1574,7 @@
                             window.lastLng = currentLng;
                             window.totalDistance = 0;
                         }
-                        
+
                         window.userLat = currentLat;
                         window.userLng = currentLng;
 
@@ -1239,7 +1594,7 @@
                             pilotIcon.className = `w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors bg-green-50 text-green-500`;
                         }
 
-                        if (window.updatePilotLocation && document.getElementById('sos-active-modal').classList.contains('hidden')) {
+                        if (window.updatePilotLocation && document.getElementById('sos-active-modal').classList.contains('hidden') && localStorage.getItem('imade_app_pin')) {
                             window.updatePilotLocation(window.userLat, window.userLng, 'activo');
                         }
 
@@ -1272,7 +1627,7 @@
                             pilotIcon.className = `w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors bg-red-50 text-red-500`;
                         }
 
-                        if (window.updatePilotLocation) window.updatePilotLocation(0, 0, 'inactivo');
+                        if (window.updatePilotLocation && localStorage.getItem('imade_app_pin')) window.updatePilotLocation(0, 0, 'inactivo');
                         openGpsModal();
                     },
                     { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
@@ -1322,7 +1677,7 @@
                 const color = isSOS ? '#ef4444' : '#36a8e1';
                 const pulseClass = isSOS ? 'sos-danger-blink' : '';
                 const iconCls = isSOS ? 'fa-triangle-exclamation' : 'fa-truck-fast';
-                
+
                 // Formateando Velocidad y Distancia
                 const speedText = pilot.speed ? `<i class="fa-solid fa-gauge-high"></i> ${pilot.speed.toFixed(1)} km/h` : '<i class="fa-solid fa-gauge-high"></i> 0 km/h';
                 const distText = pilot.distance ? `<i class="fa-solid fa-route"></i> ${pilot.distance.toFixed(1)} km` : '<i class="fa-solid fa-route"></i> 0 km';
@@ -1514,7 +1869,7 @@
                     boxZoom: false
                 }).setView([lat, lng], 16);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(detailMap);
-                
+
                 const clientIcon = L.divIcon({ className: 'custom-div-icon', html: "<div style='background-color:#22387a; width:34px; height:34px; border-radius:50%; border:3px solid white; box-shadow:0 4px 10px rgba(0,0,0,0.4); display:flex; justify-content:center; align-items:center;'><i class='fa-solid fa-store' style='color:white; font-size:14px;'></i></div>", iconSize: [34, 34], iconAnchor: [17, 17] });
                 detailMarker = L.marker([lat, lng], { icon: clientIcon }).addTo(detailMap);
             } else {
